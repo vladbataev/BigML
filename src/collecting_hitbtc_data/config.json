@@ -1,0 +1,16 @@
+{
+  "url": "https://api.hitbtc.com/api/2/public/",
+  "url_mount": "https://api.hitbtc.com/",
+
+  "currencies_ids": ["BTC", "ETH", "BCH", "USD", "DASH", "XRP", "XMR", "LTC", "ZEC"],
+
+  "file_data": "data.csv",
+  "file_backup": 0,
+  "file_logs": "logs.txt",
+  "file_pickle": "pickle.pkl",
+
+  "rows_to_write": 3600,
+  "period": 1000,
+  "ping_limit": 800,
+  "quantile": 25
+}
