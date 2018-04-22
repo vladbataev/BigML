@@ -1,5 +1,6 @@
 #include <iostream>
 #include <eigen3/Eigen/Dense>
+#include <vector>
 
 using Matrix = Eigen::MatrixXd;
 
