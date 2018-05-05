@@ -13,21 +13,22 @@ CachedWTransform::CachedWTransform(std::vector<int> lags)
     : lags(lags)
 {
     m = 0;
+    map<int, int> lag_num;
+    std::set<int> diff_set;
+    for (int i = 0; i < lags.size(); i++) {
+        m = max(lags[i], m);
+        lag_num[lags[i]] = i;
+    }
     for (auto l: lags) {
-        m = max(l, m);
         for (auto r: lags) {
             diff_set.insert(abs(l - r));
         }
     }
-    auto has = [&](int l) {
-        auto it = std::lower_bound(lags.begin(), lags.end(), l);
-        return (it != lags.end() && *it == l);
-    };
-
     for (auto d: diff_set) {
-        for (auto l: lags) {
-            if (has(l - d)) {
-                diffs.push_back({l, d});
+        for (int i = 0; i < lags.size(); i++) {
+            auto it = lag_num.find(lags[i] - d);
+            if (it != lag_num.end()) {
+                diffs.push_back({it->second, d, i, lags[i]});
             }
         }
     }
@@ -43,9 +44,9 @@ Eigen::SparseMatrix<double> CachedWTransform::operator() (size_t T, const Vector
         }
     }
 
-    for (auto [l, d]: diffs) {
+    for (auto [lmd_i, d, l_i, l]: diffs) {
         for (size_t t = m; t < T; t++) {
-            auto temp = w[l] * w[l - d];
+            auto temp = w[l_i] * w[lmd_i];
             Lh.coeffRef(t, t + d) -= temp;
             Lh.coeffRef(t, t) += temp;
             Lh.coeffRef(t + d, t + d) += temp;
@@ -70,6 +71,6 @@ void optimize_X(
         It.setIdentity();
         auto Lh = transform(T, W.row(i)) * nu + F.row(i).squaredNorm() * It;
         mY += F.row(i).transpose() * X.row(i);
-        X.row(i) = ConjugatedGradient(Lh, Y.transpose() * F.row(i));
+        X.row(i) = ConjugatedGradient(Lh, Y.transpose() * F.row(i).transpose());
     }
 }

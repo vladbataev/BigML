@@ -30,6 +30,7 @@ if (test)
 
     add_executable(runTests
         cg_test.cpp
+        X_test.cpp
     )
 
     target_link_libraries(runTests optimizers GTest::GTest GTest::Main)
