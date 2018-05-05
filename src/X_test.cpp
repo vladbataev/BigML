@@ -9,9 +9,13 @@ TEST(X_component, Smoke) {
     MatrixXd F(3, 2); F.setZero();
     MatrixXd X(3, 7); X.setZero();
 
-    auto t = CachedWTransform({3, 4, 5, 7});
+    auto t = CachedWTransform({2, 4, 5, 6});
 
-    MatrixXd W(3, 4); W.setZero();
+    MatrixXd W(3, 4);
+    W <<
+        1, 2, 3, 4,
+        5, 6, 7, 8,
+        9, 10, 11, 12;
 
     optimize_X(Y, F, X, t, W, 1);
 }

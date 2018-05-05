@@ -3,6 +3,8 @@
 
 #include <Eigen/Sparse>
 
+#include <cassert>
+
 #include <algorithm>
 #include <set>
 
@@ -45,7 +47,7 @@ Eigen::SparseMatrix<double> CachedWTransform::operator() (size_t T, const Vector
     }
 
     for (auto [lmd_i, d, l_i, l]: diffs) {
-        for (size_t t = m; t < T; t++) {
+        for (size_t t = m; t + l < T; t++) {
             auto temp = w[l_i] * w[lmd_i];
             Lh.coeffRef(t, t + d) -= temp;
             Lh.coeffRef(t, t) += temp;
@@ -66,10 +68,9 @@ void optimize_X(
     auto T = Y.cols();
     auto k = F.cols();
     for (int i = 0; i < k; i++) {
-        MatrixXd mY = Y - F.transpose() * X; 
-        SparseMatrix<double> It(T, T);
-        It.setIdentity();
-        auto Lh = transform(T, W.row(i)) * nu + F.row(i).squaredNorm() * It;
+        MatrixXd mY = Y - F.transpose() * X;
+        SparseMatrix<double> It(T, T); It.setIdentity();
+        SparseMatrix<double> Lh = transform(T, W.row(i)) * nu + F.row(i).squaredNorm() * It;
         mY += F.row(i).transpose() * X.row(i);
         X.row(i) = ConjugatedGradient(Lh, Y.transpose() * F.row(i).transpose());
     }
