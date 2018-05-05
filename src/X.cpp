@@ -1,4 +1,5 @@
 #include "X.h"
+#include "conjugated_gradients.h"
 
 #include <eigen3/Eigen/Sparse>
 
@@ -53,28 +54,22 @@ Eigen::SparseMatrix<double> CachedWTransform::operator() (size_t T, const Vector
     return Lh;
 }
 
-MatrixXd optimize_x(
+void optimize_X(
     const MatrixXd& Y,
     const MatrixXd& F,
-    const CachedWTransform& transform,
     MatrixXd& X,
+    const CachedWTransform& transform,
     const MatrixXd& W,
     double nu)
 {
     auto T = Y.cols();
-    auto n = Y.rows();
     auto k = F.cols();
     for (int i = 0; i < k; i++) {
-        MatrixXd mY = Y; 
-        auto Lh = transform(T, W.row(i));
-        Lh *= 2 * nu;
-        for (int j = 0; j < k; j++) {
-            if (j != i) {
-                for (int l = 0; l < T; l++) {
-                    mY(i, l) -= F(l, j) * X(j, l);
-                }
-            }
-
-        }
+        MatrixXd mY = Y - F.transpose() * X; 
+        SparseMatrix<double> It(T, T);
+        It.setIdentity();
+        auto Lh = transform(T, W.row(i)) * nu + F.row(i).squaredNorm() * It;
+        mY += F.row(i).transpose() * X.row(i);
+        X.row(i) = ConjugatedGradient(Lh, Y.transpose() * F.row(i));
     }
 }

@@ -19,9 +19,10 @@ private:
     int m;
 };
 
-Eigen::MatrixXd optimize_x(
+void optimize_X(
     const Eigen::MatrixXd& Y,
     const Eigen::MatrixXd& F,
+    Eigen::MatrixXd& X,
     const CachedWTransform& transform,
     const std::vector<Eigen::MatrixXd>& W,
     double nu
