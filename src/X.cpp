@@ -1,7 +1,7 @@
 #include "X.h"
 #include "conjugated_gradients.h"
 
-#include <eigen3/Eigen/Sparse>
+#include <Eigen/Sparse>
 
 #include <algorithm>
 #include <set>
