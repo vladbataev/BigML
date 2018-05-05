@@ -29,7 +29,7 @@ if (test)
     include_directories(${GTEST_INCLUDE_DIRS})
 
     add_executable(runTests
-        cg_test.cpp
+        cg_test.cc
         X_test.cpp
     )
 
