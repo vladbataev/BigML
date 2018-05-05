@@ -1,10 +1,12 @@
 #include "X.h"
 #include "conjugated_gradients.h"
 
+#include <Eigen/Eigenvalues>
 #include <Eigen/Sparse>
 
 #include <cassert>
 
+#include <iostream>
 #include <algorithm>
 #include <set>
 
@@ -40,20 +42,25 @@ Eigen::SparseMatrix<double> CachedWTransform::operator() (size_t T, const Vector
     SparseMatrix<double> Lh(T, T);
 
     SparseMatrix<double> D;
-    for (auto l: lags) {
-        for (size_t i = m; i + l <= T; i++) {
-            Lh.coeffRef(i, i) += w[l] * w[l] / 2;
+    double wsum = 0;
+    for (int i = 0; i < lags.size(); i++) {
+        wsum += w[i];
+    }
+    for (int i = 0; i < lags.size(); i++) {
+        for (int j = m; j + lags[i] < T; j++) {
+            Lh.coeffRef(j, j) += wsum * w[i] / 2;
         }
     }
 
     for (auto [lmd_i, d, l_i, l]: diffs) {
         for (size_t t = m; t + l < T; t++) {
-            auto temp = w[l_i] * w[lmd_i];
+            auto temp = 2 * w[l_i] * w[lmd_i];
             Lh.coeffRef(t, t + d) -= temp;
             Lh.coeffRef(t, t) += temp;
             Lh.coeffRef(t + d, t + d) += temp;
         }
     }
+    std::cout << Lh;
     return Lh;
 }
 
@@ -69,9 +76,18 @@ void optimize_X(
     auto k = F.cols();
     for (int i = 0; i < k; i++) {
         MatrixXd mY = Y - F.transpose() * X;
+        mY += F.row(i).transpose() * X.row(i);
+
         SparseMatrix<double> It(T, T); It.setIdentity();
         SparseMatrix<double> Lh = transform(T, W.row(i)) * nu + F.row(i).squaredNorm() * It;
-        mY += F.row(i).transpose() * X.row(i);
+
+#ifndef NDEBUG
+        Eigen::LLT<MatrixXd> llt(Lh); // compute the Cholesky decomposition of A
+        auto evals = MatrixXd(Lh).eigenvalues();
+        std::cout << evals << std::endl;
+        assert(llt.info() != Eigen::NumericalIssue);
+#endif
+
         X.row(i) = ConjugatedGradient(Lh, Y.transpose() * F.row(i).transpose());
     }
 }
