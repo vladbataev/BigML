@@ -1,5 +1,5 @@
 #include <iostream>
-#include <eigen3/Eigen/Dense>
+#include <Eigen/Dense>
 
 Eigen::MatrixXd OptimizeByF(Eigen::MatrixXd Y, Eigen::MatrixXd X, double lambda) {
     Eigen::BDCSVD<Eigen::MatrixXd> svd(Eigen::Transpose<Eigen::MatrixXd>(X),
