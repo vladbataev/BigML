@@ -1,8 +1,12 @@
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.5.1)
 
 find_package(Eigen3 REQUIRED)
 include_directories(${EIGEN3_INCLUDE_DIR})
 
+find_package(Boost 1.62.0 COMPONENTS program_options REQUIRED )
+INCLUDE_DIRECTORIES( ${Boost_INCLUDE_DIR} )
+
+SET(CMAKE_CXX_COMPILER g++)
 set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++17")
 
 add_library(
@@ -16,7 +20,9 @@ add_library(
 
 add_executable(main main.cpp)
 
-target_link_libraries(main optimizers)
+target_link_libraries(main LINK_PUBLIC ${Boost_LIBRARIES} optimizers)
+
+
 
 # cmake -Dtest=ON
 option(test "Build tests." OFF)
