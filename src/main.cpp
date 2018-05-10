@@ -71,6 +71,7 @@ void to_eigen_matrix(const std::vector<std::vector<float>> data, MatrixXd& matri
 
 int main(int argc, const char* argv[]) {
     po::options_description desc("Allowed options");
+    std::vector<int> default_lags = {1, 5, 10, 100};
     desc.add_options()
             ("help", "produce help message")
             ("dataset_path", po::value<std::string>(),  "path to dataset")
@@ -78,6 +79,8 @@ int main(int argc, const char* argv[]) {
             ("train_end", po::value<long>(), "train end timestamp")
             ("test_start", po::value<long>()->default_value(-1), "test start timestamp")
             ("test_end", po::value<long>()->default_value(-1), "test end timestamp")
+            ("lags", po::value<std::vector<int> >()->multitoken()->default_value(default_lags, "1 5 10 100"),
+                 "lags list")
             ;
 
     po::variables_map vm;
@@ -89,6 +92,7 @@ int main(int argc, const char* argv[]) {
     auto train_end = vm["train_end"].as<long>();
     auto test_start = vm["test_start"].as<long>();
     auto test_end = vm["test_end"].as<long>();
+    auto lags = vm["lags"].as<std::vector<int>>();
 
     std::ifstream file(dataset_path);
     CSVRow row;
