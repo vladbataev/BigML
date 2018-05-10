@@ -22,5 +22,5 @@ TEST(X_component, Smoke) {
         5, 6,
         9, 10;
 
-    optimize_X(Y, F, X, t, W, 1);
+    optimize_X(Y, F, X, t, W, 1, 1, 1e-6);
 }

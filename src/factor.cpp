@@ -36,14 +36,14 @@ double Loss(const MatrixXd& Y,  const Regularizer& opts, const Factorization& re
 }
 
 
-void Step(const MatrixXd& Y, const Regularizer& opts, Factorization& result, CachedWTransform& Wt) {
+void Step(const MatrixXd& Y, const Regularizer& opts, Factorization& result, CachedWTransform& Wt, double tol) {
     #ifndef NDEBUG
     auto before = Loss(Y, opts, result);
     std::cout << "Loss before: " << before << "\n";
     #endif
     result.F = OptimizeByF(Y, result.X, opts.lambdaF);
     result.W = OptimizeByW(result.X, opts.lags, opts.lambdaX, opts.lambdaW);
-    optimize_X(Y, result.F, result.X, Wt, result.W, opts.lambdaX);
+    optimize_X(Y, result.F, result.X, Wt, result.W, opts.nu, opts.lambdaX, tol);
     #ifndef NDEBUG
     auto after =  Loss(Y, opts, result);
     std::cout << "Loss after: " << after << "\n";
@@ -51,11 +51,11 @@ void Step(const MatrixXd& Y, const Regularizer& opts, Factorization& result, Cac
     #endif
 }
 
-Factorization Factorize(MatrixXd Y, Regularizer opts, size_t lat_dim, size_t steps) {
+Factorization Factorize(MatrixXd Y, Regularizer opts, size_t lat_dim, size_t steps, double tol) {
     auto [Wt, result] = Init(Y, opts, lat_dim);
 
     for (size_t i = 0; i < steps; i++) {
-        Step(Y, opts, result, Wt);
+        Step(Y, opts, result, Wt, tol);
     }
     return result;
 }
