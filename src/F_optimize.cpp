@@ -2,7 +2,7 @@
 #include <Eigen/Dense>
 
 Eigen::MatrixXd OptimizeByF(const Eigen::MatrixXd& Y, const Eigen::MatrixXd& X, double lambda) {
-    Eigen::BDCSVD<Eigen::MatrixXd> svd(X.transpose(), Eigen::ComputeThinU | Eigen::ComputeFullV);
+    Eigen::BDCSVD<Eigen::MatrixXd> svd(X, Eigen::ComputeThinU | Eigen::ComputeThinV);
     Eigen::MatrixXd U = svd.matrixU();
     Eigen::MatrixXd V = svd.matrixV();
     Eigen::VectorXd singularValues = svd.singularValues();
@@ -17,12 +17,8 @@ Eigen::MatrixXd OptimizeByF(const Eigen::MatrixXd& Y, const Eigen::MatrixXd& X, 
     Eigen::DiagonalMatrix<double, Eigen::Dynamic> middle_d(properValues);
     Eigen::MatrixXd middle(middle_d);
 
+    Eigen::MatrixXd proceededMatrix = U * middle * V.transpose();
 
-    Eigen::MatrixXd proceededMatrix = V * middle * Eigen::Transpose<Eigen::MatrixXd>(U);
-
-    Eigen::MatrixXd result = proceededMatrix * Y.transpose();
-    result.transposeInPlace();
-    return  result;
-
+    return proceededMatrix * Y.transpose();
 }
 

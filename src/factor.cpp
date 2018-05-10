@@ -10,15 +10,15 @@ std::tuple<CachedWTransform, Factorization> Init(const MatrixXd& Y, const Regula
         CachedWTransform(opts.lags),
         {
             .W = MatrixXd(Y.cols(), opts.lags.size()),
-            .F = MatrixXd(Y.rows(), lat_dim),
+            .F = MatrixXd(lat_dim, Y.rows()),
             .X = MatrixXd(lat_dim, Y.cols())
         }
     };
 }
 
 void Step(const MatrixXd& Y, const Regularizer& opts, Factorization& result, CachedWTransform& Wt) {
-    result.F = OptimizeByF(Y, result.X.transpose(), opts.lambdaF);
     result.W = OptimizeByW(result.X, opts.lags, opts.lambdaX, opts.lambdaW);
+    result.F = OptimizeByF(Y, result.X, opts.lambdaF);
     optimize_X(Y, result.F, result.X, Wt, result.W, opts.lambdaX);
 }
 
