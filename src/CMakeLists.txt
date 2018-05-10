@@ -11,6 +11,7 @@ add_library(
     conjugated_gradients.cpp
     F_optimize.cpp
     X.cpp
+    W.cpp
 )
 
 

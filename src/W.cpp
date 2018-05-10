@@ -1,6 +1,5 @@
+#include "W.h"
 #include <iostream>
-#include <Eigen/Dense>
-#include <vector>
 
 using Matrix = Eigen::MatrixXd;
 
