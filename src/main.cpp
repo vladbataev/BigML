@@ -9,6 +9,7 @@
 #include <Eigen/Dense>
 #include <boost/program_options.hpp>
 
+
 using namespace std;
 using namespace Eigen;
 
@@ -102,10 +103,10 @@ int main(int argc, const char* argv[]) {
     std::vector<std::vector<float>> test_data;
     while(file >> row) {
         long timestamp = std::stol(row[0]);
-        if (train_start <= timestamp <= train_end) {
+        if (train_start <= timestamp  && timestamp <= train_end) {
             insert_row(train_data, row, data_columns);
         }
-        if (test_start <= timestamp <= test_end) {
+        if (test_start <= timestamp && timestamp <= test_end) {
             insert_row(test_data, row, data_columns);
         }
     }
@@ -121,5 +122,10 @@ int main(int argc, const char* argv[]) {
         MatrixXd test_matrix = MatrixXd::Zero(train_N, train_T);
         to_eigen_matrix(test_data, test_matrix);
     }
-    std::cout << train_matrix;
+    size_t lat_dim = 100;
+    size_t steps = 20;
+    auto factor = Factorize(train_matrix, Regularizer{lags, 1.0, 1.0, 1.0}, lat_dim, steps);
+    std::cout << factor.F << "\n";
+    std::cout << factor.W << "\n";
+    std::cout << factor.X << "\n";
 }

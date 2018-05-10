@@ -17,7 +17,7 @@ std::tuple<CachedWTransform, Factorization> Init(const MatrixXd& Y, const Regula
 }
 
 void Step(const MatrixXd& Y, const Regularizer& opts, Factorization& result, CachedWTransform& Wt) {
-    result.F = OptimizeByF(Y, result.X, opts.lambdaF);
+    result.F = OptimizeByF(Y, result.X.transpose(), opts.lambdaF);
     result.W = OptimizeByW(result.X, opts.lags, opts.lambdaX, opts.lambdaW);
     optimize_X(Y, result.F, result.X, Wt, result.W, opts.lambdaX);
 }
