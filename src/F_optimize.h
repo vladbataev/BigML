@@ -1,4 +1,4 @@
 #pragma once
 #include <Eigen/Dense>
 
-Eigen::MatrixXd OptimizeByF(Eigen::MatrixXd Y, Eigen::MatrixXd X, double lambda);
+Eigen::MatrixXd OptimizeByF(const Eigen::MatrixXd& Y, const Eigen::MatrixXd& X, double lambda);

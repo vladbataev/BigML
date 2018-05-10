@@ -5,11 +5,28 @@
 
 using namespace Eigen;
 
-Factorization Factorize(MatrixXd X, Regularizer opts, size_t steps) {
-    CachedWTransform Wt(opts.lags);
-    MatrixXd W(X.rows(), opts.lags.size());
-    MatrixXd F;
+std::tuple<CachedWTransform, Factorization> Init(const MatrixXd& Y, const Regularizer& opts, size_t lat_dim) {
+    return {
+        CachedWTransform(opts.lags),
+        {
+            .W = MatrixXd(Y.cols(), opts.lags.size()),
+            .F = MatrixXd(Y.rows(), lat_dim),
+            .X = MatrixXd(lat_dim, Y.cols())
+        }
+    };
+}
+
+void Step(const MatrixXd& Y, const Regularizer& opts, Factorization& result, CachedWTransform& Wt) {
+    result.F = OptimizeByF(Y, result.X, opts.lambdaF);
+    result.W = OptimizeByW(result.X, opts.lags, opts.lambdaX, opts.lambdaW);
+    optimize_X(Y, result.F, result.X, Wt, result.W, opts.lambdaX);
+}
+
+Factorization Factorize(MatrixXd Y, Regularizer opts, size_t lat_dim, size_t steps) {
+    auto [Wt, result] = Init(Y, opts, lat_dim);
 
     for (size_t i = 0; i < steps; i++) {
+        Step(Y, opts, result, Wt);
     }
+    return result;
 }

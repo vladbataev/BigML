@@ -4,9 +4,17 @@
 struct Regularizer {
     std::vector<int> lags;
     double lambdaW;
+    double lambdaX;
+    double lambdaF;
 };
 
 struct Factorization {
+    Eigen::MatrixXd W;
+    Eigen::MatrixXd F;
+    Eigen::MatrixXd X;
 };
 
-Factorization Factorize(Eigen::MatrixXd X, Regularizer opts, size_t steps);
+std::tuple<class CachedWTransform, Factorization> Init(const Eigen::MatrixXd& Y, const Regularizer& opts, size_t lat_dim);
+void Step(const Eigen::MatrixXd& Y, const Regularizer& opts, Factorization& result, CachedWTransform& Wt);
+
+Factorization Factorize(Eigen::MatrixXd Y, Regularizer opts, size_t lat_dim, size_t steps);

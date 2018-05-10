@@ -3,7 +3,7 @@
 
 using Matrix = Eigen::MatrixXd;
 
-Matrix ConstructFeatureMatrix(const Eigen::VectorXd& row, const std::vector<long>& lags, long L) {
+Matrix ConstructFeatureMatrix(const Eigen::VectorXd& row, const std::vector<int>& lags, long L) {
     long T = row.size();
     long m = L + 1;
     long num_lags = lags.size();
@@ -16,7 +16,7 @@ Matrix ConstructFeatureMatrix(const Eigen::VectorXd& row, const std::vector<long
     return feature_matrix;
 }
 
-Matrix OptimizeByW(const Matrix& X, const std::vector<long>& lags, double lambda_W, double lambda_X) {
+Matrix OptimizeByW(const Matrix& X, const std::vector<int>& lags, double lambda_W, double lambda_X) {
     long L = *std::max_element(lags.begin(), lags.end());
     long m = L + 1;
     long k = X.rows();
