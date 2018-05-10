@@ -78,7 +78,7 @@ void optimize_X(
     double tolerance)
 {
     auto T = Y.cols();
-    auto k = F.cols();
+    auto k = F.rows();
     for (int i = 0; i < k; i++) {
         auto f_norm = F.row(i).squaredNorm();
         if (f_norm < tolerance) {
