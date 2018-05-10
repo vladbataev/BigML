@@ -16,6 +16,7 @@ add_library(
     F_optimize.cpp
     X.cpp
     W.cpp
+    factor.cpp
 )
 
 
