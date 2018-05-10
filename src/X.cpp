@@ -60,7 +60,11 @@ Eigen::SparseMatrix<double> CachedWTransform::operator() (size_t T, const Vector
             Lh.coeffRef(t + d, t + d) += temp;
         }
     }
+
+#ifndef NDEBUG
     std::cout << Lh;
+#endif
+    
     return Lh;
 }
 
