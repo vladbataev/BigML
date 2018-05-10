@@ -6,7 +6,6 @@ include_directories(${EIGEN3_INCLUDE_DIR})
 find_package(Boost 1.62.0 COMPONENTS program_options REQUIRED )
 INCLUDE_DIRECTORIES( ${Boost_INCLUDE_DIR} )
 
-SET(CMAKE_CXX_COMPILER g++)
 set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++17")
 
 add_library(
