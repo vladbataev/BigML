@@ -24,5 +24,6 @@ void optimize_X(
     Eigen::MatrixXd& X,
     const CachedWTransform& transform,
     const Eigen::MatrixXd& W,
-    double nu
+    double nu,
+    double tolerance=1e-6
 );

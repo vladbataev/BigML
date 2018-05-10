@@ -6,6 +6,7 @@ struct Regularizer {
     double lambdaW;
     double lambdaX;
     double lambdaF;
+    double nu;
 };
 
 struct Factorization {

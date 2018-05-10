@@ -60,7 +60,7 @@ Eigen::SparseMatrix<double> CachedWTransform::operator() (size_t T, const Vector
             Lh.coeffRef(t + d, t + d) += temp;
         }
     }
-    std::cout << Lh;
+    std::cout <<"\nLh: \n" << Lh << "\n";
     return Lh;
 }
 
@@ -70,21 +70,28 @@ void optimize_X(
     MatrixXd& X,
     const CachedWTransform& transform,
     const MatrixXd& W,
-    double nu)
+    double nu,
+    double tolerance)
 {
     auto T = Y.cols();
     auto k = F.cols();
     for (int i = 0; i < k; i++) {
+        auto f_norm = F.row(i).squaredNorm();
+        if (f_norm < tolerance) {
+            continue;
+        }
         MatrixXd mY = Y - F.transpose() * X;
         mY += F.row(i).transpose() * X.row(i);
 
         SparseMatrix<double> It(T, T); It.setIdentity();
-        SparseMatrix<double> Lh = transform(T, W.row(i)) * nu + F.row(i).squaredNorm() * It;
+        SparseMatrix<double> Lh = transform(T, W.row(i)) * nu + f_norm * It;
 
 #ifndef NDEBUG
+        assert(F == MatrixXd::Zero(F.rows(), F.cols()));
+        assert(W == MatrixXd::Zero(W.rows(), W.cols()));
         Eigen::LLT<MatrixXd> llt(Lh); // compute the Cholesky decomposition of A
         auto evals = MatrixXd(Lh).eigenvalues();
-        std::cout << evals << std::endl;
+        std::cout << "\nEigen values: \n" << evals << std::endl;
         assert(llt.info() != Eigen::NumericalIssue);
 #endif
 
