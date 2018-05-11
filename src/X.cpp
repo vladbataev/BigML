@@ -42,20 +42,24 @@ Eigen::SparseMatrix<double> CachedWTransform::operator() (size_t T, const Vector
     SparseMatrix<double> Lh(T, T);
 
     SparseMatrix<double> D;
-    double wsum = 0;
+    double wsum = -1;
     for (int i = 0; i < lags.size(); i++) {
         wsum += w[i];
     }
+    for (int j = 0; j < T; j++) {
+        Lh.coeffRef(j, j) -= wsum;
+    }
     for (int i = 0; i < lags.size(); i++) {
-        for (int j = m; j + lags[i] < T; j++) {
+        for (int j = max(0, m - lags[i]); j + lags[i] < T; j++) {
             Lh.coeffRef(j, j) += wsum * w[i] / 2;
         }
     }
 
     for (auto [lmd_i, d, l_i, l]: diffs) {
-        for (size_t t = m; t + l < T; t++) {
-            auto temp = 2 * w[l_i] * w[lmd_i];
+        for (size_t t = max(0, m - l); t + l < T; t++) {
+            auto temp = w[l_i] * w[lmd_i];
             Lh.coeffRef(t, t + d) -= temp;
+            Lh.coeffRef(t + d, t) -= temp;
             Lh.coeffRef(t, t) += temp;
             Lh.coeffRef(t + d, t + d) += temp;
         }
@@ -84,32 +88,29 @@ void optimize_X(
     SparseMatrix<double> It(T, T); It.setIdentity();
 
     for (int i = 0; i < k; i++) {
-        auto f_norm = F.row(i).squaredNorm();
-        if (f_norm < tolerance) {
-            continue;
-        }
         MatrixXd mY = Y - F.transpose() * X + F.row(i).transpose() * X.row(i);
 
-        SparseMatrix<double> B(T, T);
-        for (int l = 0; l < F.cols(); l++) {
-            for (int j = 0; j < T; j++) {
-                if (Sigma(l, j)) {
-                    B.coeffRef(j, j) += F(i, l) * F(i, l);
-                }
-            }
-        }
+//        SparseMatrix<double> B(T, T);
+//        for (int l = 0; l < F.cols(); l++) {
+//            for (int j = 0; j < T; j++) {
+//                if (Sigma(l, j)) {
+//                    B.coeffRef(j, j) += F(i, l) * F(i, l);
+//                }
+//            }
+//        }
 
-        SparseMatrix<double> Lh = transform(T, W.row(i)) * lambdaX + B + (lambdaX * nu/2) * It;
+        //SparseMatrix<double> Lh = transform(T, W.row(i)) * lambdaX + B + (lambdaX * nu/2) * It;
+        SparseMatrix<double> M = (transform(T, W.row(i)) + (nu/2) * It) *lambdaX + F.row(i).squaredNorm() * It;
 
 #ifndef NDEBUG
         assert(F != MatrixXd::Zero(F.rows(), F.cols()));
         assert(W != MatrixXd::Zero(W.rows(), W.cols()));
-        Eigen::LLT<MatrixXd> llt(Lh); // compute the Cholesky decomposition of A
-        auto evals = MatrixXd(Lh).eigenvalues();
+        Eigen::LLT<MatrixXd> llt(M); // compute the Cholesky decomposition of A
+        auto evals = MatrixXd(M).eigenvalues();
         std::cout << "\nEigen values: \n" << evals << std::endl;
         assert(llt.info() != Eigen::NumericalIssue);
 #endif
 
-        X.row(i) = ConjugatedGradient(Lh, mY.transpose() * F.row(i).transpose());
+        X.row(i) = ConjugatedGradient(M, mY.transpose() * F.row(i).transpose());
     }
 }

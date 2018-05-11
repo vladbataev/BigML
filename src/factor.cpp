@@ -38,15 +38,22 @@ double Loss(const MatrixXd& Y, const MatrixXb& sigma, const Regularizer& opts, c
 
 void Step(const MatrixXd& Y, const MatrixXb& sigma, const Regularizer& opts, Factorization& result, CachedWTransform& Wt, double tol) {
     #ifndef NDEBUG
-    auto before = Loss(Y, sigma, opts, result);
-    std::cout << "Loss before: " << before << "\n";
+        auto before = Loss(Y, sigma, opts, result);
+        std::cout << "Loss before: " << before << "\n";
     #endif
     result.F = OptimizeByF(Y, result.X, opts.lambdaF);
+    #ifndef NDEBUG
+        auto after =  Loss(Y, sigma, opts, result);
+        std::cout << "Loss after F: " << after << "\n";
+        assert(after < before);
+        before = after;
+    #endif
     optimize_X(Y, sigma, result.F, result.X, Wt, result.W, opts.nu, opts.lambdaX, tol);
     #ifndef NDEBUG
-    auto after =  Loss(Y, sigma, opts, result);
-    std::cout << "Loss after: " << after << "\n";
-    //assert(after < before);
+        after =  Loss(Y, sigma, opts, result);
+        std::cout << "Loss after X: " << after << "\n";
+        assert(after < before);
+        before = after;
     #endif
 }
 
