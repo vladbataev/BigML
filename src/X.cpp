@@ -87,7 +87,7 @@ void optimize_X(
         MatrixXd mY = Y - F.transpose() * X + F.row(i).transpose() * X.row(i);
 
         SparseMatrix<double> It(T, T); It.setIdentity();
-        SparseMatrix<double> Lh = (transform(T, W.row(i)) + (f_norm + nu/2) * It) * lambdaX;
+        SparseMatrix<double> Lh = transform(T, W.row(i)) * lambdaX + (f_norm + lambdaX * nu/2) * It;
 
 #ifndef NDEBUG
         assert(F != MatrixXd::Zero(F.rows(), F.cols()));
