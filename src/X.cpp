@@ -90,17 +90,16 @@ void optimize_X(
     for (int i = 0; i < k; i++) {
         MatrixXd mY = Y - F.transpose() * X + F.row(i).transpose() * X.row(i);
 
-//        SparseMatrix<double> B(T, T);
-//        for (int l = 0; l < F.cols(); l++) {
-//            for (int j = 0; j < T; j++) {
-//                if (Sigma(l, j)) {
-//                    B.coeffRef(j, j) += F(i, l) * F(i, l);
-//                }
-//            }
-//        }
+        SparseMatrix<double> B(T, T);
+        for (int l = 0; l < F.cols(); l++) {
+            for (int j = 0; j < T; j++) {
+                if (Sigma(l, j)) {
+                    B.coeffRef(j, j) += F(i, l) * F(i, l);
+                }
+            }
+        }
 
-        //SparseMatrix<double> Lh = transform(T, W.row(i)) * lambdaX + B + (lambdaX * nu/2) * It;
-        SparseMatrix<double> M = (transform(T, W.row(i)) + (nu/2) * It) *lambdaX + F.row(i).squaredNorm() * It;
+        SparseMatrix<double> M = (transform(T, W.row(i)) + (nu/2) * It) * lambdaX + B;
 
 #ifndef NDEBUG
         assert(F != MatrixXd::Zero(F.rows(), F.cols()));
