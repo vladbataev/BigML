@@ -143,7 +143,7 @@ int main(int argc, const char* argv[]) {
         to_eigen_matrix(test_data, test_matrix);
     }
 
-    train_matrix = MatrixXd::Random(50, 50);
+    //train_matrix = MatrixXd::Random(50, 50);
 
     size_t lat_dim = 2;
     size_t steps = 20;

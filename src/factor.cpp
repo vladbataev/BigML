@@ -25,11 +25,13 @@ double Loss(const MatrixXd& Y, const MatrixXb& sigma, const Regularizer& opts, c
     auto L = *std::max_element(opts.lags.begin(), opts.lags.end());
     for (int r = 0; r < result.X.rows(); ++r) {
         for (int t = L; t < T; ++t) {
-            auto tmp = result.X(r, t);
-            for (int l = 0 ; l < opts.lags.size(); ++l) {
-                tmp -= result.W(r,  l) * result.X(r, t - opts.lags[l]);
+            if (sigma(r, t)) {
+                auto tmp = result.X(r, t);
+                for (int l = 0 ; l < opts.lags.size(); ++l) {
+                    tmp -= result.W(r,  l) * result.X(r, t - opts.lags[l]);
+                }
+                x_part += tmp * tmp * opts.lambdaX / 2;
             }
-            x_part += tmp * tmp * opts.lambdaX / 2;
         }
     }
     return easy + x_part;
@@ -41,11 +43,18 @@ void Step(const MatrixXd& Y, const MatrixXb& sigma, const Regularizer& opts, Fac
         auto before = Loss(Y, sigma, opts, result);
         std::cout << "Loss before: " << before << "\n";
     #endif
-    result.F = OptimizeByF(Y, result.X, opts.lambdaF);
+    result.W = OptimizeByW(result.X, opts.lags, opts.lambdaX, opts.lambdaW);
     #ifndef NDEBUG
         auto after =  Loss(Y, sigma, opts, result);
         std::cout << "Loss after F: " << after << "\n";
-        assert(after < before);
+        //assert(after < before);
+        before = after;
+    #endif
+    result.F = OptimizeByF(Y, result.X, opts.lambdaF);
+    #ifndef NDEBUG
+        after =  Loss(Y, sigma, opts, result);
+        std::cout << "Loss after W: " << after << "\n";
+        //assert(after < before);
         before = after;
     #endif
     optimize_X(Y, sigma, result.F, result.X, Wt, result.W, opts.nu, opts.lambdaX, tol);
@@ -60,8 +69,11 @@ void Step(const MatrixXd& Y, const MatrixXb& sigma, const Regularizer& opts, Fac
 Factorization Factorize(MatrixXd Y, MatrixXb sigma, Regularizer opts, size_t lat_dim, size_t steps, double tol) {
     auto [Wt, result] = Init(Y, opts, lat_dim);
 
+    std::cerr << "Loss: " << Loss(Y, sigma, opts, result) << "\n";
     for (size_t i = 0; i < steps; i++) {
+
         Step(Y, sigma, opts, result, Wt, tol);
+        std::cerr << "Loss after" << i << "th iteration: " << Loss(Y, sigma, opts, result) << "\n";
     }
     return result;
 }
