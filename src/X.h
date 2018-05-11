@@ -14,6 +14,8 @@ public:
 
     Eigen::SparseMatrix<double> operator() (size_t T, const Eigen::VectorXd& w) const;
 
+    Eigen::SparseMatrix<double> operator2(size_t T, const Eigen::VectorXd& w) const;
+
 private:
     std::vector<std::tuple<int, int, int, int>> diffs;
     std::vector<int> lags;

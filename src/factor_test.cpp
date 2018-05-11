@@ -13,7 +13,7 @@ TEST(Factor, LossDecreases) {
     std::vector<int> lags{1, 5, 10};
     MatrixXd Y = MatrixXd::Random(50, 50);
     MatrixXb sigma = Eigen::MatrixXb::Ones(Y.rows(), Y.cols());
-    Regularizer opts{lags, 1.0, 1.0, 1.0};
+    Regularizer opts{lags, 1.0, 1.0, 1.0, 1.0};
     auto lat_dim = 2;
     auto steps = 5;
 

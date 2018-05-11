@@ -38,7 +38,7 @@ CachedWTransform::CachedWTransform(std::vector<int> lags)
     }
 }
 
-Eigen::SparseMatrix<double> CachedWTransform::operator() (size_t T, const VectorXd& w) const {
+Eigen::SparseMatrix<double> CachedWTransform::operator2(size_t T, const VectorXd& w) const {
     SparseMatrix<double> Lh(T, T);
 
     SparseMatrix<double> D;
@@ -68,6 +68,42 @@ Eigen::SparseMatrix<double> CachedWTransform::operator() (size_t T, const Vector
     return Lh;
 }
 
+Eigen::SparseMatrix<double> CachedWTransform::operator() (size_t T, const VectorXd& w) const {
+    VectorXd D(T);
+
+    double wsum = -1;
+    for (int i = 0; i < lags.size(); i++) {
+        wsum += w[i];
+    }
+    for (int j = 0; j < T; j++) {
+        D(j) -= wsum;
+    }
+    for (int i = 0; i < lags.size(); i++) {
+        for (int j = max(0, m - lags[i]); j + lags[i] < T; j++) {
+            D(j) += wsum * w[i] / 2;
+        }
+    }
+
+    std::vector<Eigen::Triplet<double>> triplets;
+    for (auto [lmd_i, d, l_i, l]: diffs) {
+        for (size_t t = max(0, m - l); t + l < T; t++) {
+            auto temp = w[l_i] * w[lmd_i];
+            triplets.push_back({t, t + d, -temp});
+            triplets.push_back({t + d, t, -temp});
+            D(t) += temp;
+            D(t + d) += temp;
+        }
+    }
+    
+    SparseMatrix<double> Lh(T, T);
+
+    for (int i = 0; i < T; i++) {
+        triplets.push_back({i, i, D(i)});
+    }
+    Lh.setFromTriplets(triplets.begin(), triplets.end());
+    return Lh;
+}
+
 void optimize_X(
     const MatrixXd& Y,
     const Eigen::MatrixXb& Sigma,
@@ -94,6 +130,16 @@ void optimize_X(
                     B.coeffRef(j, j) += F(i, l) * F(i, l);
                 }
             }
+        }
+
+        {
+            auto f = MatrixXd(transform(T, W.row(i)));
+            auto s = MatrixXd(transform.operator2(T, W.row(i)));
+            auto diff = (f - s);
+            std::cout << "------" << std::endl << diff << std::endl;
+            std::cout << std::endl;
+
+            assert((f - s).squaredNorm() < 1e-6);
         }
 
         SparseMatrix<double> M = (transform(T, W.row(i)) + (nu/2) * It) * lambdaX + B;
