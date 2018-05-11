@@ -1,3 +1,5 @@
+#pragma once
+
 #include <vector>
 #include <Eigen/Dense>
 
@@ -15,7 +17,11 @@ struct Factorization {
     Eigen::MatrixXd X;
 };
 
-std::tuple<class CachedWTransform, Factorization> Init(const Eigen::MatrixXd& Y, const Regularizer& opts, size_t lat_dim);
-void Step(const Eigen::MatrixXd& Y, const Regularizer& opts, Factorization& result, CachedWTransform& Wt, double tol=1e-6);
+namespace Eigen {
+using MatrixXb = Matrix<bool, Dynamic, Dynamic>;
+}
 
-Factorization Factorize(Eigen::MatrixXd Y, Regularizer opts, size_t lat_dim, size_t steps, double tol=1e-6);
+std::tuple<class CachedWTransform, Factorization> Init(const Eigen::MatrixXd& Y, const Regularizer& opts, size_t lat_dim);
+void Step(const Eigen::MatrixXd& Y, const Eigen::MatrixXb& Sigma, const Regularizer& opts, Factorization& result, CachedWTransform& Wt, double tol=1e-6);
+
+Factorization Factorize(Eigen::MatrixXd Y, Eigen::MatrixXb Sigma, Regularizer opts, size_t lat_dim, size_t steps, double tol=1e-6);

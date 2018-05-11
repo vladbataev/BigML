@@ -69,6 +69,7 @@ Eigen::SparseMatrix<double> CachedWTransform::operator() (size_t T, const Vector
 
 void optimize_X(
     const MatrixXd& Y,
+    const Eigen::MatrixXb& Sigma,
     const MatrixXd& F,
     MatrixXd& X,
     const CachedWTransform& transform,
@@ -79,6 +80,9 @@ void optimize_X(
 {
     auto T = Y.cols();
     auto k = F.rows();
+    auto n = F.cols();
+    SparseMatrix<double> It(T, T); It.setIdentity();
+
     for (int i = 0; i < k; i++) {
         auto f_norm = F.row(i).squaredNorm();
         if (f_norm < tolerance) {
@@ -86,8 +90,16 @@ void optimize_X(
         }
         MatrixXd mY = Y - F.transpose() * X + F.row(i).transpose() * X.row(i);
 
-        SparseMatrix<double> It(T, T); It.setIdentity();
-        SparseMatrix<double> Lh = transform(T, W.row(i)) * lambdaX + (f_norm + lambdaX * nu/2) * It;
+        SparseMatrix<double> B(T, T);
+        for (int l = 0; l < F.cols(); l++) {
+            for (int j = 0; j < T; j++) {
+                if (Sigma(l, j)) {
+                    B.coeffRef(j, j) += F(i, l) * F(i, l);
+                }
+            }
+        }
+
+        SparseMatrix<double> Lh = transform(T, W.row(i)) * lambdaX + B + (lambdaX * nu/2) * It;
 
 #ifndef NDEBUG
         assert(F != MatrixXd::Zero(F.rows(), F.cols()));

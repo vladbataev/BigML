@@ -124,7 +124,11 @@ int main(int argc, const char* argv[]) {
     }
     size_t lat_dim = 100;
     size_t steps = 20;
-    auto factor = Factorize(train_matrix, Regularizer{lags, 1.0, 1.0, 1.0}, lat_dim, steps);
+    auto factor = Factorize(train_matrix,
+            Eigen::MatrixXb::Ones(train_matrix.rows(), train_matrix.cols()),
+            Regularizer{lags, 1.0, 1.0, 1.0},
+            lat_dim,
+            steps);
     std::cout << factor.F << "\n";
     std::cout << factor.W << "\n";
     std::cout << factor.X << "\n";

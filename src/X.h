@@ -1,5 +1,7 @@
 #pragma once
 
+#include "factor.h"
+
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 
@@ -20,6 +22,7 @@ private:
 
 void optimize_X(
     const Eigen::MatrixXd& Y,
+    const Eigen::MatrixXb& Sigma,
     const Eigen::MatrixXd& F,
     Eigen::MatrixXd& X,
     const CachedWTransform& transform,
