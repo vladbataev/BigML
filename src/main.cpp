@@ -33,7 +33,7 @@ public:
         std::string         cell;
 
         m_data.clear();
-        while(std::getline(lineStream, cell, ';')) {
+        while(std::getline(lineStream, cell, sep)) {
             m_data.push_back(cell);
         }
         // This checks for a trailing comma with no data after it.
@@ -59,8 +59,8 @@ std::istream& operator>>(std::istream& str, CSVRow& data) {
 
 void insert_row(std::vector<std::vector<float>>& dataset,  const CSVRow& row,
                 const std::set<size_t>& dropped_columns, size_t timestamp_column, long start_t, long end_t) {
-    dataset.push_back(std::vector<float>());
     if (std::stol(row[timestamp_column]) >= start_t && std::stol(row[timestamp_column]) <= end_t) {
+        dataset.push_back(std::vector<float>());
         for (size_t i = 0; i < row.size(); ++i) {
             if (dropped_columns.find(i) == dropped_columns.end()) {
                 std::string value = row[i];
@@ -124,6 +124,8 @@ int main(int argc, const char* argv[]) {
     std::ifstream file(dataset_path);
     CSVRow row(sep);
     file >> row;
+    size_t n = row.size() - drop_columns.size();
+
     std::vector<std::vector<float>> train_data;
     std::vector<std::vector<float>> test_data;
     while(file >> row) {
