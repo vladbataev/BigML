@@ -153,7 +153,8 @@ int main(int argc, const char* argv[]) {
             Eigen::MatrixXb::Ones(train_matrix.rows(), train_matrix.cols()),
             Regularizer{lags, 1.0, 1.0, 1.0},
             lat_dim,
-            steps);
+            steps,
+            true);
     std::cout << factor.F << "\n";
     std::cout << factor.W << "\n";
     std::cout << factor.X << "\n";

@@ -24,5 +24,5 @@ TEST(X_component, Smoke) {
 
     auto s = MatrixXb::Ones(Y.rows(), Y.cols());
 
-    optimize_X(Y, s, F, X, t, W, 1, 1, 1e-6);
+    optimize_X(Y, s, F, X, t, W, 1, 1, true);
 }

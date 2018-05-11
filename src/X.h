@@ -29,5 +29,5 @@ void optimize_X(
     const Eigen::MatrixXd& W,
     double nu,
     double lambdaX,
-    double tolerance=1e-6
+    bool verify=false
 );

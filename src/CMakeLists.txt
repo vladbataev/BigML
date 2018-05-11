@@ -15,7 +15,7 @@ add_library(
     X.cpp
     W.cpp
     factor.cpp
-     predict.cpp
+    predict.cpp
 )
 
 
@@ -38,6 +38,7 @@ if (test)
     add_executable(runTests
         cg_test.cc
         X_test.cpp
+        factor_test.cpp
     )
 
     target_link_libraries(runTests optimizers GTest::GTest GTest::Main)

@@ -65,9 +65,6 @@ Eigen::SparseMatrix<double> CachedWTransform::operator() (size_t T, const Vector
         }
     }
 
-#ifndef NDEBUG
-    std::cout <<"\nLh: \n" << Lh << "\n";
-#endif
     return Lh;
 }
 
@@ -80,7 +77,7 @@ void optimize_X(
     const MatrixXd& W,
     double nu,
     double lambdaX,
-    double tolerance)
+    bool verify)
 {
     auto T = Y.cols();
     auto k = F.rows();
@@ -101,15 +98,18 @@ void optimize_X(
 
         SparseMatrix<double> M = (transform(T, W.row(i)) + (nu/2) * It) * lambdaX + B;
 
-#ifndef NDEBUG
-        assert(F != MatrixXd::Zero(F.rows(), F.cols()));
-        assert(W != MatrixXd::Zero(W.rows(), W.cols()));
-        Eigen::LLT<MatrixXd> llt(M); // compute the Cholesky decomposition of A
-        auto evals = MatrixXd(M).eigenvalues();
-        std::cout << "\nEigen values: \n" << evals << std::endl;
-        assert(llt.info() != Eigen::NumericalIssue);
-#endif
+        if (verify) {
+            assert(F != MatrixXd::Zero(F.rows(), F.cols()));
+            assert(W != MatrixXd::Zero(W.rows(), W.cols()));
+            Eigen::LLT<MatrixXd> llt(M);
+            auto evals = MatrixXd(M).eigenvalues();
+            std::cerr << "\nEigen values: \n" << evals << std::endl;
+            assert(llt.info() != Eigen::NumericalIssue);
+        }
 
-        X.row(i) = ConjugatedGradient(M, mY.transpose() * F.row(i).transpose());
+        Eigen::ConjugateGradient<SparseMatrix<double>, Lower|Upper> cg;
+        cg.compute(M);
+        X.row(i) = cg.solve(mY.transpose() * F.row(i).transpose());
+        //X.row(i) = ConjugatedGradient(M, mY.transpose() * F.row(i).transpose());
     }
 }

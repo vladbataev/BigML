@@ -2,7 +2,6 @@
 #include "conjugated_gradients.h"
 
 Eigen::VectorXd ConjugatedGradient(Eigen::SparseMatrix<double> A, Eigen::VectorXd b, double epsilon, bool check) {
-    //std::cout << b.rows();
     int n = b.rows();
 
     Eigen::VectorXd current(n);
