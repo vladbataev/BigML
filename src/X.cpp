@@ -38,38 +38,8 @@ CachedWTransform::CachedWTransform(std::vector<int> lags)
     }
 }
 
-Eigen::SparseMatrix<double> CachedWTransform::operator2(size_t T, const VectorXd& w) const {
-    SparseMatrix<double> Lh(T, T);
-
-    SparseMatrix<double> D;
-    double wsum = -1;
-    for (int i = 0; i < lags.size(); i++) {
-        wsum += w[i];
-    }
-    for (int j = 0; j < T; j++) {
-        Lh.coeffRef(j, j) -= wsum;
-    }
-    for (int i = 0; i < lags.size(); i++) {
-        for (int j = max(0, m - lags[i]); j + lags[i] < T; j++) {
-            Lh.coeffRef(j, j) += wsum * w[i] / 2;
-        }
-    }
-
-    for (auto [lmd_i, d, l_i, l]: diffs) {
-        for (size_t t = max(0, m - l); t + l < T; t++) {
-            auto temp = w[l_i] * w[lmd_i];
-            Lh.coeffRef(t, t + d) -= temp;
-            Lh.coeffRef(t + d, t) -= temp;
-            Lh.coeffRef(t, t) += temp;
-            Lh.coeffRef(t + d, t + d) += temp;
-        }
-    }
-
-    return Lh;
-}
-
 Eigen::SparseMatrix<double> CachedWTransform::operator() (size_t T, const VectorXd& w) const {
-    VectorXd D(T);
+    VectorXd D = VectorXd::Zero(T);
 
     double wsum = -1;
     for (int i = 0; i < lags.size(); i++) {
@@ -123,26 +93,18 @@ void optimize_X(
     for (int i = 0; i < k; i++) {
         MatrixXd mY = Y - F.transpose() * X + F.row(i).transpose() * X.row(i);
 
-        SparseMatrix<double> B(T, T);
+        VectorXd B = VectorXd::Zero(T);
         for (int l = 0; l < F.cols(); l++) {
             for (int j = 0; j < T; j++) {
                 if (Sigma(l, j)) {
-                    B.coeffRef(j, j) += F(i, l) * F(i, l);
+                    B(j) += F(i, l) * F(i, l);
                 }
             }
         }
 
-        {
-            auto f = MatrixXd(transform(T, W.row(i)));
-            auto s = MatrixXd(transform.operator2(T, W.row(i)));
-            auto diff = (f - s);
-            std::cout << "------" << std::endl << diff << std::endl;
-            std::cout << std::endl;
-
-            assert((f - s).squaredNorm() < 1e-6);
-        }
-
-        SparseMatrix<double> M = (transform(T, W.row(i)) + (nu/2) * It) * lambdaX + B;
+        SparseMatrix<double> M = transform(T, W.row(i)) * lambdaX;
+        M += (nu/2) * lambdaX * VectorXd::Ones(T).asDiagonal();
+        M += B.asDiagonal();
 
         if (verify) {
             assert(F != MatrixXd::Zero(F.rows(), F.cols()));
