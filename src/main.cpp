@@ -1,10 +1,12 @@
 #include "factor.h"
+#include "predict.h"
 #include <iterator>
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <vector>
 #include <string>
+#include <set>
 
 #include <Eigen/Dense>
 #include <boost/program_options.hpp>
@@ -40,7 +42,12 @@ public:
             m_data.push_back("");
         }
     }
+
+    explicit CSVRow(char sep): sep(sep)
+    {}
+
 private:
+    char sep;
     std::vector<std::string>    m_data;
 };
 
@@ -51,12 +58,16 @@ std::istream& operator>>(std::istream& str, CSVRow& data) {
 
 
 void insert_row(std::vector<std::vector<float>>& dataset,  const CSVRow& row,
-                const std::vector<int>& data_columns) {
+                const std::set<size_t>& dropped_columns, size_t timestamp_column, long start_t, long end_t) {
     dataset.push_back(std::vector<float>());
-    for (const auto& column: data_columns) {
-        std::string value = row[column];
-        std::replace(value.begin(), value.end(), ',', '.');
-        dataset.back().push_back(std::stof(value));
+    if (std::stol(row[timestamp_column]) >= start_t && std::stol(row[timestamp_column]) <= end_t) {
+        for (size_t i = 0; i < row.size(); ++i) {
+            if (dropped_columns.find(i) == dropped_columns.end()) {
+                std::string value = row[i];
+                std::replace(value.begin(), value.end(), ',', '.');
+                dataset.back().push_back(std::stof(value));
+            }
+        }
     }
 }
 
@@ -73,15 +84,21 @@ void to_eigen_matrix(const std::vector<std::vector<float>> data, MatrixXd& matri
 int main(int argc, const char* argv[]) {
     po::options_description desc("Allowed options");
     std::vector<int> default_lags = {1, 5, 10};
+    std::vector<size_t> default_drop_columns = {};
+
     desc.add_options()
             ("help", "produce help message")
             ("dataset_path", po::value<std::string>(),  "path to dataset")
+            ("timestamp_column", po::value<size_t >()->default_value(0), "timestamp column")
             ("train_start", po::value<long>(), "train start timestamp")
             ("train_end", po::value<long>(), "train end timestamp")
             ("test_start", po::value<long>()->default_value(-1), "test start timestamp")
             ("test_end", po::value<long>()->default_value(-1), "test end timestamp")
+            ("drop_columns", po::value<std::vector<size_t> >()->multitoken()->default_value(default_drop_columns, ""),
+                 "drop columns list")
             ("lags", po::value<std::vector<int> >()->multitoken()->default_value(default_lags, "1 5 10"),
                  "lags list")
+            ("separator", po::value<char>()->default_value(';'),  "separator for csv")
             ;
 
     po::variables_map vm;
@@ -93,22 +110,25 @@ int main(int argc, const char* argv[]) {
     auto train_end = vm["train_end"].as<long>();
     auto test_start = vm["test_start"].as<long>();
     auto test_end = vm["test_end"].as<long>();
+    auto sep = vm["separator"].as<char>();
     auto lags = vm["lags"].as<std::vector<int>>();
+    auto drop_columns = vm["drop_columns"].as<std::vector<size_t>>();
+    auto timestamp_column = vm["timestamp_column"].as<size_t>();
+
+    std::set<size_t> dropped_columns;
+    for (const auto& d: drop_columns) {
+        dropped_columns.insert(d);
+    }
+    dropped_columns.insert(timestamp_column);
 
     std::ifstream file(dataset_path);
-    CSVRow row;
+    CSVRow row(sep);
     file >> row;
-    std::vector<int> data_columns = {2, 3, 4, 5};
     std::vector<std::vector<float>> train_data;
     std::vector<std::vector<float>> test_data;
     while(file >> row) {
-        long timestamp = std::stol(row[0]);
-        if (train_start <= timestamp  && timestamp <= train_end) {
-            insert_row(train_data, row, data_columns);
-        }
-        if (test_start <= timestamp && timestamp <= test_end) {
-            insert_row(test_data, row, data_columns);
-        }
+        insert_row(train_data, row, dropped_columns, timestamp_column, train_start, train_end);
+        insert_row(test_data, row, dropped_columns, timestamp_column, test_start, test_end);
     }
 
     int train_T = train_data.size();
@@ -122,10 +142,16 @@ int main(int argc, const char* argv[]) {
         MatrixXd test_matrix = MatrixXd::Zero(train_N, train_T);
         to_eigen_matrix(test_data, test_matrix);
     }
-    size_t lat_dim = 100;
+
+    train_matrix = MatrixXd::Random(50, 50);
+
+    size_t lat_dim = 2;
     size_t steps = 20;
     auto factor = Factorize(train_matrix, Regularizer{lags, 1.0, 1.0, 1.0}, lat_dim, steps);
     std::cout << factor.F << "\n";
     std::cout << factor.W << "\n";
     std::cout << factor.X << "\n";
+
+    std::cout << Predict(factor, lags);
+
 }

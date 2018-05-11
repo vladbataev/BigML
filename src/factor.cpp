@@ -47,7 +47,7 @@ void Step(const MatrixXd& Y, const Regularizer& opts, Factorization& result, Cac
     #ifndef NDEBUG
     auto after =  Loss(Y, opts, result);
     std::cout << "Loss after: " << after << "\n";
-    assert(after < before);
+    //assert(after < before);
     #endif
 }
 
