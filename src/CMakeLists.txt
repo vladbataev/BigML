@@ -10,12 +10,12 @@ set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++17")
 
 add_library(
     optimizers
-
     conjugated_gradients.cpp
     F_optimize.cpp
     X.cpp
     W.cpp
     factor.cpp
+     predict.cpp
 )
 
 
