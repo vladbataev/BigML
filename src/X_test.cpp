@@ -4,7 +4,7 @@
 
 using namespace Eigen;
 
-TEST(X_component, Smoke) {
+TEST(X_component, PositiveDefinite) {
     MatrixXd Y(2, 7);
     Y.setZero();
     MatrixXd F(3, 2);
