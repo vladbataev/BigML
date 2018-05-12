@@ -112,7 +112,9 @@ int main(int argc, const char* argv[]) {
                  "drop columns list")
             ("lags", po::value<std::vector<int> >()->multitoken()->default_value(default_lags, "1 5 10"),
                  "lags list")
+            ("verbose", po::value<bool>()->default_value(false), "verbose all shit")
             ("separator", po::value<char>()->default_value(';'),  "separator for csv")
+            ("predictions_out", po::value<string>()->default_value(""),  "predictions output filename")
             ;
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -128,6 +130,7 @@ int main(int argc, const char* argv[]) {
     auto drop_columns = vm["drop_columns"].as<std::vector<size_t>>();
     auto timestamp_column = vm["timestamp_column"].as<size_t>();
     auto steps = vm["steps"].as<size_t>();
+    auto verbose = vm["verbose"].as<bool>();
     auto lat_dim = vm["lat_dim"].as<size_t>();
 
     std::set<size_t> dropped_columns;
@@ -160,7 +163,7 @@ int main(int argc, const char* argv[]) {
     }
     timestamp_column -= timestamp_shitf;
 
-    double time_step = (*train_data[timestamp_column].back() - *train_data[timestamp_column][0]) / train_data[timestamp_column].size();
+    double time_step = (*train_data.back()[timestamp_column] - *train_data[0][timestamp_column]) / (train_data.size() - 1);
 
     int train_T = train_data.size();
     int train_N = train_data[0].size() - 1;
@@ -168,11 +171,13 @@ int main(int argc, const char* argv[]) {
     MatrixXb train_omega = MatrixXb::Zero(train_N, train_T);
     to_eigen_matrix(train_data, train_matrix, train_omega, timestamp_column);
 
+    MatrixXd test_matrix;
+    MatrixXb test_omega;
     if (test_data.size() > 0) {
         int test_T = test_data.size();
         int test_N = test_data[0].size() - 1;
-        MatrixXd test_matrix = MatrixXd::Zero(train_N, train_T);
-        MatrixXb test_omega = MatrixXb::Zero(test_N, test_T);
+        test_matrix = MatrixXd::Zero(test_N, test_T);
+        test_omega = MatrixXb::Zero(test_N, test_T);
         to_eigen_matrix(test_data, test_matrix, test_omega, timestamp_column);
     }
 
@@ -182,14 +187,17 @@ int main(int argc, const char* argv[]) {
             lat_dim,
             steps,
             true);
-    std::cout << factor.F << "\n";
-    std::cout << factor.W << "\n";
-    std::cout << factor.X << "\n";
-
+    if (verbose) {
+        std::cout << factor.F << "\n";
+        std::cout << factor.W << "\n";
+        std::cout << factor.X << "\n";
+    }
     size_t test_start_index = (test_start - train_start) / time_step;
     size_t test_end_index = test_end / time_step;
     if (test_data.size() > 0) {
         test_end_index = test_start_index + test_data.size();
     }
-    std::cout << Predict(factor, lags, test_start_index, test_end_index);
+    auto predictions = Predict(factor, lags, test_start_index, test_end_index);
+    std::cout << "RMSE: " << RMSE(test_matrix, predictions, test_omega) << "\n";
+    std::cout << "ND: " << ND(test_matrix, predictions, test_omega) << "\n";
 }
