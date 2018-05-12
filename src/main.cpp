@@ -90,6 +90,7 @@ int main(int argc, const char* argv[]) {
             ("help", "produce help message")
             ("dataset_path", po::value<std::string>(),  "path to dataset")
             ("timestamp_column", po::value<size_t >()->default_value(0), "timestamp column")
+            ("steps", po::value<size_t >()->default_value(100), "optimization steps")
             ("train_start", po::value<long>(), "train start timestamp")
             ("train_end", po::value<long>(), "train end timestamp")
             ("test_start", po::value<long>()->default_value(-1), "test start timestamp")
@@ -114,6 +115,7 @@ int main(int argc, const char* argv[]) {
     auto lags = vm["lags"].as<std::vector<int>>();
     auto drop_columns = vm["drop_columns"].as<std::vector<size_t>>();
     auto timestamp_column = vm["timestamp_column"].as<size_t>();
+    auto steps = vm["steps"].as<size_t>();
 
     std::set<size_t> dropped_columns;
     for (const auto& d: drop_columns) {
@@ -148,7 +150,6 @@ int main(int argc, const char* argv[]) {
     //train_matrix = MatrixXd::Random(50, 50);
 
     size_t lat_dim = 2;
-    size_t steps = 20;
     auto factor = Factorize(train_matrix,
             Eigen::MatrixXb::Ones(train_matrix.rows(), train_matrix.cols()),
             Regularizer{lags, 1.0, 1.0, 1.0},
