@@ -4,4 +4,8 @@
 #include <Eigen/Dense>
 
 
-Eigen::VectorXd Predict(const Factorization& factor, const std::vector<int>& lags);
+Eigen::MatrixXd Predict(
+        const Factorization& factor,
+        const std::vector<int>& lags,
+        long t_start, long t_end
+);

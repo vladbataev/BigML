@@ -73,17 +73,21 @@ void insert_row(std::vector<std::vector<std::optional<double>>>& dataset,  const
     }
 }
 
-void to_eigen_matrix(const std::vector<std::vector<std::optional<double>>> data, MatrixXd& matrix, MatrixXb& Omega) {
+void to_eigen_matrix(const std::vector<std::vector<std::optional<double>>> data, MatrixXd& matrix,
+                     MatrixXb& Omega, size_t timestamp_row) {
     int T = data.size();
     int n = data[0].size();
     for (int i = 0; i < n; ++i) {
+        if (i == timestamp_row) {
+            continue;
+        }
         for (int j = 0; j < T; ++j) {
             if (data[j][i]) {
-                matrix(i, j) = *data[j][i];
-                Omega(i, j) = true;
+                matrix(i - (i > timestamp_row), j) = *data[j][i];
+                Omega(i - (i > timestamp_row), j) = true;
             } else {
-                matrix(i, j) = 0;
-                Omega(i, j) = false;
+                matrix(i - (i > timestamp_row), j) = 0;
+                Omega(i - (i > timestamp_row), j) = false;
             }
         }
     }
@@ -92,7 +96,7 @@ void to_eigen_matrix(const std::vector<std::vector<std::optional<double>>> data,
 int main(int argc, const char* argv[]) {
     po::options_description desc("Allowed options");
     std::vector<int> default_lags = {1, 5, 10};
-    std::vector<size_t> default_drop_columns = {0, 1};
+    std::vector<size_t> default_drop_columns = {1};
 
     desc.add_options()
             ("help", "produce help message")
@@ -130,7 +134,6 @@ int main(int argc, const char* argv[]) {
     for (const auto& d: drop_columns) {
         dropped_columns.insert(d);
     }
-    dropped_columns.insert(timestamp_column);
 
     std::ifstream file(dataset_path);
     CSVRow row(sep);
@@ -139,30 +142,40 @@ int main(int argc, const char* argv[]) {
 
     std::vector<std::vector<std::optional<double>>> train_data;
     std::vector<std::vector<std::optional<double>>> test_data;
+
     while(file >> row) {
-        if (std::stol(row[timestamp_column]) >= train_start && std::stol(row[timestamp_column]) <= train_end) {
+        if (std::stol(row[timestamp_column]) >= train_start && std::stol(row[timestamp_column]) < train_end) {
             insert_row(train_data, row, dropped_columns);
         }
-        if (std::stol(row[timestamp_column]) >= test_start && std::stol(row[timestamp_column]) <= test_end) {
+        if (std::stol(row[timestamp_column]) >= test_start && std::stol(row[timestamp_column]) < test_end) {
             insert_row(test_data, row, dropped_columns);
         }
     }
 
+    int timestamp_shitf = 0;
+    for (auto i: dropped_columns) {
+        if (i < timestamp_column) {
+            ++timestamp_shitf;
+        }
+    }
+    timestamp_column -= timestamp_shitf;
+
+    double time_step = (*train_data[timestamp_column].back() - *train_data[timestamp_column][0]) / train_data[timestamp_column].size();
+
     int train_T = train_data.size();
-    int train_N = train_data[0].size();
+    int train_N = train_data[0].size() - 1;
     MatrixXd train_matrix = MatrixXd::Zero(train_N, train_T);
     MatrixXb train_omega = MatrixXb::Zero(train_N, train_T);
-    to_eigen_matrix(train_data, train_matrix, train_omega);
+    to_eigen_matrix(train_data, train_matrix, train_omega, timestamp_column);
 
     if (test_data.size() > 0) {
         int test_T = test_data.size();
-        int test_N = test_data[0].size();
+        int test_N = test_data[0].size() - 1;
         MatrixXd test_matrix = MatrixXd::Zero(train_N, train_T);
         MatrixXb test_omega = MatrixXb::Zero(test_N, test_T);
-        to_eigen_matrix(test_data, test_matrix, test_omega);
+        to_eigen_matrix(test_data, test_matrix, test_omega, timestamp_column);
     }
 
-    size_t lat_dim = 2;
     auto factor = Factorize(train_matrix,
             train_omega,
             Regularizer{lags, 1.0, 1.0, 1.0},
@@ -173,6 +186,10 @@ int main(int argc, const char* argv[]) {
     std::cout << factor.W << "\n";
     std::cout << factor.X << "\n";
 
-    std::cout << Predict(factor, lags);
-
+    size_t test_start_index = (test_start - train_start) / time_step;
+    size_t test_end_index = test_end / time_step;
+    if (test_data.size() > 0) {
+        test_end_index = test_start_index + test_data.size();
+    }
+    std::cout << Predict(factor, lags, test_start_index, test_end_index);
 }
