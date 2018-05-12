@@ -1,5 +1,4 @@
 #include "X.h"
-#include "conjugated_gradients.h"
 
 #include <Eigen/Eigenvalues>
 #include <Eigen/Sparse>
@@ -117,6 +116,5 @@ void optimize_X(
         Eigen::ConjugateGradient<SparseMatrix<double>, Lower|Upper> cg;
         cg.compute(M);
         X.row(i) = cg.solve(mY.transpose() * F.row(i).transpose());
-        //X.row(i) = ConjugatedGradient(M, mY.transpose() * F.row(i).transpose());
     }
 }
