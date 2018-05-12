@@ -94,8 +94,8 @@ std::tuple<MatrixXd, MatrixXb> ToEigenMatrices(
 }
 
 void SavePredictions(const MatrixXd& predictions,
-                     std::vector<size_t> timestamps, string out_csv) {
-    ofstream myfile;
+                     std::vector<size_t> timestamps, std::string out_csv) {
+    std::ofstream myfile;
     myfile.open (out_csv);
     for (size_t i = 0; i < predictions.cols(); ++i) {
         myfile << timestamps[i];
