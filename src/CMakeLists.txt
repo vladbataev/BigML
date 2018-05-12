@@ -42,6 +42,7 @@ if (test)
     include_directories(${GTEST_INCLUDE_DIRS})
 
     add_executable(runTests
+        W_test.cpp
         X_test.cpp
         factor_test.cpp
     )
