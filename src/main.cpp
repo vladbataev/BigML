@@ -71,10 +71,10 @@ std::vector<std::tuple<double, double>> Standardize(MatrixXd& matrix) {
     int T = matrix.cols();
     int n = matrix.rows();
     std::vector<std::tuple<double, double>> statistics;
-    for (int l = 0; l < T; ++l) {
-        double mean = matrix.col(l).mean();
-        double sigma = sqrt((matrix.col(l) - mean * VectorXd::Ones(n)).squaredNorm() / n);
-        matrix.col(l) = (matrix.col(l) - mean * VectorXd::Ones(n)) / sigma;
+    for (int i = 0; i < n; ++i) {
+        double mean = matrix.row(i).mean();
+        double sigma = sqrt((matrix.row(i).transpose() - mean * VectorXd::Ones(T)).squaredNorm() / T);
+        matrix.row(i) = ((matrix.row(i).transpose() - mean * VectorXd::Ones(T)) / sigma).transpose();
         statistics.emplace_back(mean, sigma);
     }
     return statistics;
@@ -141,7 +141,7 @@ int main(int argc, const char* argv[]) {
            po::value<std::vector<size_t>>()->multitoken()->default_value(default_drop_columns, ""),
             "drop columns list")
         ("lags",
-            po::value<std::vector<int>>()->multitoken()->default_value(default_lags, "1 5 10"),
+            po::value<std::vector<int>>()->multitoken()->default_value(default_lags, "1 5 10 20 25 100"),
             "lags list")
         ("eval", po::value<bool>()->default_value(false), "calculate metrics if known true values")
         ("standardize", po::value<bool>()->default_value(true), "standardize train data")
@@ -247,9 +247,9 @@ int main(int argc, const char* argv[]) {
 
     auto predictions = Predict(factor, lags, test_start_index, test_end_index);
     if (standardize) {
-        for (int l = 0; l < predictions.cols(); ++l) {
-            predictions.col(l) = predictions.col(l) * std::get<1>(statistics[l]) +
-                    VectorXd::Ones(predictions.rows()) * std::get<0>(statistics[l]);
+        for (int i = 0; i < predictions.rows(); ++i) {
+            predictions.row(i) = predictions.row(i) * std::get<1>(statistics[i]) +
+                    VectorXd::Ones(predictions.cols()).transpose() * std::get<0>(statistics[i]);
         }
     }
 

@@ -104,7 +104,7 @@ void OptimizeByX(const MatrixXd& Y, const MatrixXb& omega, const MatrixXd& F,
             assert(llt.info() != NumericalIssue);
         }
 
-        ConjugateGradient<SparseMatrix<double>, Lower | Upper> cg;
+        ConjugateGradient<SparseMatrix<double>, Lower, IncompleteCholesky<double>> cg;
         cg.compute(M);
         X.row(i) = cg.solve(mY.transpose() * F.row(i).transpose());
     }
