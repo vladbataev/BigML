@@ -57,26 +57,34 @@ std::istream& operator>>(std::istream& str, CSVRow& data) {
 }
 
 
-void insert_row(std::vector<std::vector<float>>& dataset,  const CSVRow& row,
-                const std::set<size_t>& dropped_columns, size_t timestamp_column, long start_t, long end_t) {
-    if (std::stol(row[timestamp_column]) >= start_t && std::stol(row[timestamp_column]) <= end_t) {
-        dataset.push_back(std::vector<float>());
-        for (size_t i = 0; i < row.size(); ++i) {
-            if (dropped_columns.find(i) == dropped_columns.end()) {
-                std::string value = row[i];
-                std::replace(value.begin(), value.end(), ',', '.');
+void insert_row(std::vector<std::vector<std::optional<double>>>& dataset,  const CSVRow& row,
+                const std::set<size_t>& dropped_columns) {
+    dataset.emplace_back();
+    for (size_t i = 0; i < row.size(); ++i) {
+        if (dropped_columns.find(i) == dropped_columns.end()) {
+            std::string value = row[i];
+            std::replace(value.begin(), value.end(), ',', '.');
+            if (value != "" ) {
                 dataset.back().push_back(std::stof(value));
+            } else {
+                dataset.back().push_back(std::nullopt);
             }
         }
     }
 }
 
-void to_eigen_matrix(const std::vector<std::vector<float>> data, MatrixXd& matrix) {
+void to_eigen_matrix(const std::vector<std::vector<std::optional<double>>> data, MatrixXd& matrix, MatrixXb& Omega) {
     int T = data.size();
     int n = data[0].size();
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < T; ++j) {
-            matrix(i, j) = data[j][i];
+            if (data[j][i]) {
+                matrix(i, j) = *data[j][i];
+                Omega(i, j) = true;
+            } else {
+                matrix(i, j) = 0;
+                Omega(i, j) = false;
+            }
         }
     }
 }
@@ -101,7 +109,6 @@ int main(int argc, const char* argv[]) {
                  "lags list")
             ("separator", po::value<char>()->default_value(';'),  "separator for csv")
             ;
-
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
     po::notify(vm);
@@ -128,30 +135,36 @@ int main(int argc, const char* argv[]) {
     file >> row;
     size_t n = row.size() - drop_columns.size();
 
-    std::vector<std::vector<float>> train_data;
-    std::vector<std::vector<float>> test_data;
+    std::vector<std::vector<std::optional<double>>> train_data;
+    std::vector<std::vector<std::optional<double>>> test_data;
     while(file >> row) {
-        insert_row(train_data, row, dropped_columns, timestamp_column, train_start, train_end);
-        insert_row(test_data, row, dropped_columns, timestamp_column, test_start, test_end);
+        if (std::stol(row[timestamp_column]) >= train_start && std::stol(row[timestamp_column]) <= train_end) {
+            insert_row(train_data, row, dropped_columns);
+        }
+        if (std::stol(row[timestamp_column]) >= test_start && std::stol(row[timestamp_column]) <= test_end) {
+            insert_row(test_data, row, dropped_columns);
+        }
     }
 
     int train_T = train_data.size();
     int train_N = train_data[0].size();
     MatrixXd train_matrix = MatrixXd::Zero(train_N, train_T);
-    to_eigen_matrix(train_data, train_matrix);
+    MatrixXb train_omega = MatrixXb::Zero(train_N, train_T);
+    to_eigen_matrix(train_data, train_matrix, train_omega);
 
     if (test_data.size() > 0) {
         int test_T = test_data.size();
         int test_N = test_data[0].size();
         MatrixXd test_matrix = MatrixXd::Zero(train_N, train_T);
-        to_eigen_matrix(test_data, test_matrix);
+        MatrixXb test_omega = MatrixXb::Zero(test_N, test_T);
+        to_eigen_matrix(test_data, test_matrix, test_omega);
     }
 
     //train_matrix = MatrixXd::Random(50, 50);
 
     size_t lat_dim = 2;
     auto factor = Factorize(train_matrix,
-            Eigen::MatrixXb::Ones(train_matrix.rows(), train_matrix.cols()),
+            train_omega,
             Regularizer{lags, 1.0, 1.0, 1.0},
             lat_dim,
             steps,
