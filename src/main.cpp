@@ -11,7 +11,6 @@
 #include <Eigen/Dense>
 #include <boost/program_options.hpp>
 
-using namespace std;
 using namespace Eigen;
 
 namespace po = boost::program_options;
@@ -113,7 +112,7 @@ int main(int argc, const char* argv[]) {
         ("lags", po::value<std::vector<int>>()->multitoken()->default_value(default_lags, "1 5 10"), "lags list")
         ("verbose", po::value<bool>()->default_value(false), "verbose all shit")
         ("separator", po::value<char>()->default_value(';'), "separator for csv")
-        ("predictions_out", po::value<string>()->default_value(""), "predictions output filename")
+        ("predictions_out", po::value<std::string>()->default_value(""), "predictions output filename")
         ("lambdaX", po::value<double>()->default_value(1), "lambdaX")
         ("lambdaW", po::value<double>()->default_value(1), "lambdaW")
         ("lambdaF", po::value<double>()->default_value(1), "lambdaF")
