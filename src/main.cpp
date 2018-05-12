@@ -92,7 +92,7 @@ void to_eigen_matrix(const std::vector<std::vector<std::optional<double>>> data,
 int main(int argc, const char* argv[]) {
     po::options_description desc("Allowed options");
     std::vector<int> default_lags = {1, 5, 10};
-    std::vector<size_t> default_drop_columns = {};
+    std::vector<size_t> default_drop_columns = {0, 1};
 
     desc.add_options()
             ("help", "produce help message")
@@ -103,6 +103,7 @@ int main(int argc, const char* argv[]) {
             ("train_end", po::value<long>(), "train end timestamp")
             ("test_start", po::value<long>()->default_value(-1), "test start timestamp")
             ("test_end", po::value<long>()->default_value(-1), "test end timestamp")
+            ("lat_dim", po::value<size_t>()->default_value(2), "latent embedding dimension")
             ("drop_columns", po::value<std::vector<size_t> >()->multitoken()->default_value(default_drop_columns, ""),
                  "drop columns list")
             ("lags", po::value<std::vector<int> >()->multitoken()->default_value(default_lags, "1 5 10"),
@@ -123,6 +124,7 @@ int main(int argc, const char* argv[]) {
     auto drop_columns = vm["drop_columns"].as<std::vector<size_t>>();
     auto timestamp_column = vm["timestamp_column"].as<size_t>();
     auto steps = vm["steps"].as<size_t>();
+    auto lat_dim = vm["lat_dim"].as<size_t>();
 
     std::set<size_t> dropped_columns;
     for (const auto& d: drop_columns) {
@@ -159,8 +161,6 @@ int main(int argc, const char* argv[]) {
         MatrixXb test_omega = MatrixXb::Zero(test_N, test_T);
         to_eigen_matrix(test_data, test_matrix, test_omega);
     }
-
-    //train_matrix = MatrixXd::Random(50, 50);
 
     size_t lat_dim = 2;
     auto factor = Factorize(train_matrix,
