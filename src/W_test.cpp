@@ -1,11 +1,13 @@
-#include "W_optimize.h"
+#include "W.h"
+
+#include <gtest/gtest.h>
 
 
 TEST(W_component, Shape) {
     long T = 512;
     long k = 4;
-    Matrix X = Matrix::Random(k, T);
-    std::vector<long> lags;
+    Eigen::MatrixXd X = Eigen::MatrixXd::Random(k, T);
+    std::vector<int> lags;
     long L = 30;
     for (long i = 0; i < L; ++i) {
         lags.push_back(i);
