@@ -94,9 +94,10 @@ std::tuple<MatrixXd, MatrixXb> ToEigenMatrices(
 }
 
 void SavePredictions(const MatrixXd& predictions,
-                     std::vector<size_t> timestamps, string out_csv) {
-    ofstream myfile;
+                     std::vector<double> timestamps, std::string out_csv) {
+    std::ofstream myfile;
     myfile.open (out_csv);
+    myfile.precision(10);
     for (size_t i = 0; i < predictions.cols(); ++i) {
         myfile << timestamps[i];
         for (size_t j = 0; j < predictions.rows(); ++j) {
@@ -161,7 +162,7 @@ int main(int argc, const char* argv[]) {
     auto lambdaF = vm["lambdaF"].as<double>();
     auto nu = vm["nu"].as<double>();
     auto eval =  vm["eval"].as<bool>();
-    auto predictions_out = vm["predictions_out"].as<string>();
+    auto predictions_out = vm["predictions_out"].as<std::string>();
 
     std::set<size_t> dropped_columns;
     for (const auto& d : drop_columns) {
@@ -176,7 +177,7 @@ int main(int argc, const char* argv[]) {
     std::vector<std::vector<std::optional<double>>> train_data;
     std::vector<std::vector<std::optional<double>>> test_data;
 
-    std::vector<size_t > test_timestamps;
+    std::vector<double> test_timestamps;
     while (file >> row) {
         if (std::stol(row[timestamp_column]) >= train_start &&
             std::stol(row[timestamp_column]) < train_end) {
@@ -185,7 +186,7 @@ int main(int argc, const char* argv[]) {
         if (std::stol(row[timestamp_column]) >= test_start &&
             std::stol(row[timestamp_column]) < test_end) {
             InsertRow(test_data, row, dropped_columns);
-            test_timestamps.push_back(std::stol(row[timestamp_column]));
+            test_timestamps.push_back(std::stof(row[timestamp_column]));
         }
     }
 
@@ -220,15 +221,23 @@ int main(int argc, const char* argv[]) {
         std::cout << factor.X << "\n";
     }
     size_t test_start_index = (test_start - train_start) / time_step;
-    size_t test_end_index = test_end / time_step;
+    size_t test_end_index = (test_end - train_start) / time_step;
     if (test_data.size() > 0) {
         test_end_index = test_start_index + test_data.size();
     }
 
     auto predictions = Predict(factor, lags, test_start_index, test_end_index);
-    SavePredictions(predictions, test_timestamps, predictions_out);
     if (eval) {
+        SavePredictions(predictions, test_timestamps, predictions_out);
         std::cout << "RMSE: " << RMSE(test_matrix, predictions, test_omega) << "\n";
         std::cout << "ND: " << ND(test_matrix, predictions, test_omega) << "\n";
+    } else {
+        test_timestamps.clear();
+        double t = test_start;
+        while (t < test_end) {
+            test_timestamps.push_back(t);
+            t += time_step;
+        }
+        SavePredictions(predictions, test_timestamps, predictions_out);
     }
 }
