@@ -1,8 +1,7 @@
-#include <iostream>
-#include "../src/W_optimize.h"
+#include "W_optimize.h"
 
-int main()
-{
+
+TEST(W_component, Shape) {
     long T = 512;
     long k = 4;
     Matrix X = Matrix::Random(k, T);
