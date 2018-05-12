@@ -17,7 +17,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++17")
 
 add_library(
     optimizers
-    conjugated_gradients.cpp
     F_optimize.cpp
     X.cpp
     W.cpp
@@ -43,7 +42,6 @@ if (test)
     include_directories(${GTEST_INCLUDE_DIRS})
 
     add_executable(runTests
-        cg_test.cc
         X_test.cpp
         factor_test.cpp
     )
