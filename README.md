@@ -8,6 +8,6 @@ First of all we decided to try to learn only on the time period, on which data f
 
 So for all data except days we prepared two datasets - of such huge intersections, and fulls. In the first case the duration is lower, but the number of missing values is also small. In the second case duration is bigger, but at the price of huge amount of missing values.
 
-#Collecting hitbtc datasets
+# Collecting hitbtc datasets
 We collected some data from the hitbtc. For every currencies pair we have some time series, with frequency about 1 measurement per second, but unfortunately the times between neibour measurements are not exactly one second, but some value close to it. Also sometimes there are huge delays with no data for some very huge intervals like 10-20 seconds. We decided to treat it this way - we converted this to equidistant dataset with delay equal 100 seconds. In the case when all is normal we use linear interpolation, in the case of mentioned earlier missing intervals we put to such places missing values. Eventually hitbtc dataset consist of 3 datasets for btc, usd and eth markets, with common timestamps and one joint dataset with this common timestamps.
 
