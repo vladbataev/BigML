@@ -88,7 +88,6 @@ void optimize_X(
     auto T = Y.cols();
     auto k = F.rows();
     auto n = F.cols();
-    SparseMatrix<double> It(T, T); It.setIdentity();
 
     for (int i = 0; i < k; i++) {
         MatrixXd mY = Y - F.transpose() * X + F.row(i).transpose() * X.row(i);
