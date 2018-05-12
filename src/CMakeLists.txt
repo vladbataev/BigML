@@ -17,7 +17,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++17")
 
 add_library(
     optimizers
-    F_optimize.cpp
+    F.cpp
     X.cpp
     W.cpp
     factor.cpp

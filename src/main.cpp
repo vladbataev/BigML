@@ -1,16 +1,15 @@
+#include <fstream>
+#include <iostream>
+#include <iterator>
+#include <set>
+#include <sstream>
+#include <string>
+#include <vector>
 #include "factor.h"
 #include "predict.h"
-#include <iterator>
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <vector>
-#include <string>
-#include <set>
 
 #include <Eigen/Dense>
 #include <boost/program_options.hpp>
-
 
 using namespace std;
 using namespace Eigen;
@@ -18,22 +17,20 @@ using namespace Eigen;
 namespace po = boost::program_options;
 
 class CSVRow {
-public:
+   public:
     std::string const& operator[](std::size_t index) const {
         return m_data[index];
     }
-    std::size_t size() const {
-        return m_data.size();
-    }
+    std::size_t size() const { return m_data.size(); }
     void readNextRow(std::istream& str) {
-        std::string         line;
+        std::string line;
         std::getline(str, line);
 
-        std::stringstream   lineStream(line);
-        std::string         cell;
+        std::stringstream lineStream(line);
+        std::string cell;
 
         m_data.clear();
-        while(std::getline(lineStream, cell, sep)) {
+        while (std::getline(lineStream, cell, sep)) {
             m_data.push_back(cell);
         }
         // This checks for a trailing comma with no data after it.
@@ -43,12 +40,11 @@ public:
         }
     }
 
-    explicit CSVRow(char sep): sep(sep)
-    {}
+    explicit CSVRow(char sep) : sep(sep) {}
 
-private:
+   private:
     char sep;
-    std::vector<std::string>    m_data;
+    std::vector<std::string> m_data;
 };
 
 std::istream& operator>>(std::istream& str, CSVRow& data) {
@@ -56,15 +52,14 @@ std::istream& operator>>(std::istream& str, CSVRow& data) {
     return str;
 }
 
-
-void insert_row(std::vector<std::vector<std::optional<double>>>& dataset,  const CSVRow& row,
-                const std::set<size_t>& dropped_columns) {
+void InsertRow(std::vector<std::vector<std::optional<double>>>& dataset,
+               const CSVRow& row, const std::set<size_t>& dropped_columns) {
     dataset.emplace_back();
     for (size_t i = 0; i < row.size(); ++i) {
         if (dropped_columns.find(i) == dropped_columns.end()) {
             std::string value = row[i];
             std::replace(value.begin(), value.end(), ',', '.');
-            if (value != "" ) {
+            if (value != "") {
                 dataset.back().push_back(std::stof(value));
             } else {
                 dataset.back().push_back(std::nullopt);
@@ -73,10 +68,15 @@ void insert_row(std::vector<std::vector<std::optional<double>>>& dataset,  const
     }
 }
 
-void to_eigen_matrix(const std::vector<std::vector<std::optional<double>>> data, MatrixXd& matrix,
-                     MatrixXb& Omega, size_t timestamp_row) {
+std::tuple<MatrixXd, MatrixXb> ToEigenMatrices(
+    const std::vector<std::vector<std::optional<double>>> data,
+    size_t timestamp_row) {
     int T = data.size();
     int n = data[0].size();
+
+    MatrixXd matrix = MatrixXd::Zero(n - 1, T);
+    MatrixXb omega = MatrixXb::Zero(n - 1, T);
+
     for (int i = 0; i < n; ++i) {
         if (i == timestamp_row) {
             continue;
@@ -84,13 +84,14 @@ void to_eigen_matrix(const std::vector<std::vector<std::optional<double>>> data,
         for (int j = 0; j < T; ++j) {
             if (data[j][i]) {
                 matrix(i - (i > timestamp_row), j) = *data[j][i];
-                Omega(i - (i > timestamp_row), j) = true;
+                omega(i - (i > timestamp_row), j) = true;
             } else {
                 matrix(i - (i > timestamp_row), j) = 0;
-                Omega(i - (i > timestamp_row), j) = false;
+                omega(i - (i > timestamp_row), j) = false;
             }
         }
     }
+    return std::make_tuple(matrix, omega);
 }
 
 int main(int argc, const char* argv[]) {
@@ -98,24 +99,36 @@ int main(int argc, const char* argv[]) {
     std::vector<int> default_lags = {1, 5, 10};
     std::vector<size_t> default_drop_columns = {1};
 
-    desc.add_options()
-            ("help", "produce help message")
-            ("dataset_path", po::value<std::string>(),  "path to dataset")
-            ("timestamp_column", po::value<size_t >()->default_value(0), "timestamp column")
-            ("steps", po::value<size_t >()->default_value(100), "optimization steps")
-            ("train_start", po::value<long>(), "train start timestamp")
-            ("train_end", po::value<long>(), "train end timestamp")
-            ("test_start", po::value<long>()->default_value(-1), "test start timestamp")
-            ("test_end", po::value<long>()->default_value(-1), "test end timestamp")
-            ("lat_dim", po::value<size_t>()->default_value(2), "latent embedding dimension")
-            ("drop_columns", po::value<std::vector<size_t> >()->multitoken()->default_value(default_drop_columns, ""),
-                 "drop columns list")
-            ("lags", po::value<std::vector<int> >()->multitoken()->default_value(default_lags, "1 5 10"),
-                 "lags list")
-            ("verbose", po::value<bool>()->default_value(false), "verbose all shit")
-            ("separator", po::value<char>()->default_value(';'),  "separator for csv")
-            ("predictions_out", po::value<string>()->default_value(""),  "predictions output filename")
-            ;
+    desc.add_options()("help", "produce help message")(
+        "dataset_path", po::value<std::string>(), "path to dataset")(
+        "timestamp_column", po::value<size_t>()->default_value(0),
+        "timestamp column")("steps", po::value<size_t>()->default_value(100),
+                            "optimization steps")(
+        "train_start", po::value<long>(), "train start timestamp")(
+        "train_end", po::value<long>(), "train end timestamp")(
+        "test_start", po::value<long>()->default_value(-1),
+        "test start timestamp")(
+        "test_end", po::value<long>()->default_value(-1), "test end timestamp")(
+        "lat_dim", po::value<size_t>()->default_value(2),
+        "latent embedding dimension")(
+        "drop_columns",
+        po::value<std::vector<size_t>>()->multitoken()->default_value(
+            default_drop_columns, ""),
+        "drop columns list")(
+        "lags",
+        po::value<std::vector<int>>()->multitoken()->default_value(default_lags,
+                                                                   "1 5 10"),
+        "lags list")("verbose", po::value<bool>()->default_value(false),
+                     "verbose all shit")("separator",
+                                         po::value<char>()->default_value(';'),
+                                         "separator for csv")(
+        "predictions_out", po::value<string>()->default_value(""),
+        "predictions output filename")(
+        "lambdaX", po::value<double>()->default_value(1), "lambdaX")(
+        "lambdaW", po::value<double>()->default_value(1), "lambdaW")(
+        "lambdaF", po::value<double>()->default_value(1), "lambdaF")(
+        "nu", po::value<double>()->default_value(1), "nu");
+
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
     po::notify(vm);
@@ -132,9 +145,13 @@ int main(int argc, const char* argv[]) {
     auto steps = vm["steps"].as<size_t>();
     auto verbose = vm["verbose"].as<bool>();
     auto lat_dim = vm["lat_dim"].as<size_t>();
+    auto lambdaX = vm["lambdaX"].as<double>();
+    auto lambdaW = vm["lambdaW"].as<double>();
+    auto lambdaF = vm["lambdaF"].as<double>();
+    auto nu = vm["nu"].as<double>();
 
     std::set<size_t> dropped_columns;
-    for (const auto& d: drop_columns) {
+    for (const auto& d : drop_columns) {
         dropped_columns.insert(d);
     }
 
@@ -146,47 +163,46 @@ int main(int argc, const char* argv[]) {
     std::vector<std::vector<std::optional<double>>> train_data;
     std::vector<std::vector<std::optional<double>>> test_data;
 
-    while(file >> row) {
-        if (std::stol(row[timestamp_column]) >= train_start && std::stol(row[timestamp_column]) < train_end) {
-            insert_row(train_data, row, dropped_columns);
+    while (file >> row) {
+        if (std::stol(row[timestamp_column]) >= train_start &&
+            std::stol(row[timestamp_column]) < train_end) {
+            InsertRow(train_data, row, dropped_columns);
         }
-        if (std::stol(row[timestamp_column]) >= test_start && std::stol(row[timestamp_column]) < test_end) {
-            insert_row(test_data, row, dropped_columns);
+        if (std::stol(row[timestamp_column]) >= test_start &&
+            std::stol(row[timestamp_column]) < test_end) {
+            InsertRow(test_data, row, dropped_columns);
         }
     }
 
     int timestamp_shitf = 0;
-    for (auto i: dropped_columns) {
+    for (auto i : dropped_columns) {
         if (i < timestamp_column) {
             ++timestamp_shitf;
         }
     }
     timestamp_column -= timestamp_shitf;
 
-    double time_step = (*train_data.back()[timestamp_column] - *train_data[0][timestamp_column]) / (train_data.size() - 1);
+    double time_step = (*train_data.back()[timestamp_column] -
+                        *train_data[0][timestamp_column]) /
+                       (train_data.size() - 1);
 
-    int train_T = train_data.size();
-    int train_N = train_data[0].size() - 1;
-    MatrixXd train_matrix = MatrixXd::Zero(train_N, train_T);
-    MatrixXb train_omega = MatrixXb::Zero(train_N, train_T);
-    to_eigen_matrix(train_data, train_matrix, train_omega, timestamp_column);
+    auto [train_matrix, train_omega] =
+        ToEigenMatrices(train_data, timestamp_column);
 
     MatrixXd test_matrix;
     MatrixXb test_omega;
     if (test_data.size() > 0) {
-        int test_T = test_data.size();
-        int test_N = test_data[0].size() - 1;
-        test_matrix = MatrixXd::Zero(test_N, test_T);
-        test_omega = MatrixXb::Zero(test_N, test_T);
-        to_eigen_matrix(test_data, test_matrix, test_omega, timestamp_column);
+        std::tie(test_matrix, test_omega) =
+            ToEigenMatrices(test_data, timestamp_column);
     }
 
-    auto factor = Factorize(train_matrix,
-            train_omega,
-            Regularizer{lags, 1.0, 1.0, 1.0},
-            lat_dim,
-            steps,
-            true);
+    auto factor = Factorize(train_matrix, train_omega,
+                            Regularizer{.lags = lags,
+                                        .lambdaX = lambdaX,
+                                        .lambdaF = lambdaF,
+                                        .lambdaW = lambdaW,
+                                        .nu = nu},
+                            lat_dim, steps, verbose);
     if (verbose) {
         std::cout << factor.F << "\n";
         std::cout << factor.W << "\n";

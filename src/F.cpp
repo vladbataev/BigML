@@ -1,8 +1,11 @@
-#include <iostream>
+#include "F.h"
 #include <Eigen/Dense>
+#include <iostream>
 
-Eigen::MatrixXd OptimizeByF(const Eigen::MatrixXd& Y, const Eigen::MatrixXd& X, double lambda) {
-    Eigen::BDCSVD<Eigen::MatrixXd> svd(X.transpose(), Eigen::ComputeThinU | Eigen::ComputeThinV);
+Eigen::MatrixXd OptimizeByF(const Eigen::MatrixXd& Y, const Eigen::MatrixXd& X,
+                            double lambda) {
+    Eigen::BDCSVD<Eigen::MatrixXd> svd(
+        X.transpose(), Eigen::ComputeThinU | Eigen::ComputeThinV);
     Eigen::MatrixXd U = svd.matrixU();
     Eigen::MatrixXd V = svd.matrixV();
     Eigen::VectorXd singularValues = svd.singularValues();
@@ -13,7 +16,6 @@ Eigen::MatrixXd OptimizeByF(const Eigen::MatrixXd& Y, const Eigen::MatrixXd& X, 
         properValues(i) = now / (now * now + lambda);
     }
 
-
     Eigen::DiagonalMatrix<double, Eigen::Dynamic> middle_d(properValues);
     Eigen::MatrixXd middle(middle_d);
 
@@ -21,4 +23,3 @@ Eigen::MatrixXd OptimizeByF(const Eigen::MatrixXd& Y, const Eigen::MatrixXd& X, 
 
     return proceededMatrix * Y.transpose();
 }
-

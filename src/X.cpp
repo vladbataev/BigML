@@ -5,57 +5,56 @@
 
 #include <cassert>
 
-#include <iostream>
 #include <algorithm>
+#include <iostream>
 #include <set>
 
 using namespace Eigen;
 using namespace std;
 
-CachedWTransform::CachedWTransform(std::vector<int> lags)
-    : lags(lags)
-{
-    m = 0;
+CachedWTransform::CachedWTransform(vector<int> lags) : lags_(lags) {
+    m_ = 0;
     map<int, int> lag_num;
-    std::set<int> diff_set;
+    set<int> diff_set;
     for (int i = 0; i < lags.size(); i++) {
-        m = max(lags[i], m);
+        m_ = max(lags[i], m_);
         lag_num[lags[i]] = i;
     }
-    for (auto l: lags) {
-        for (auto r: lags) {
+    for (auto l : lags) {
+        for (auto r : lags) {
             diff_set.insert(abs(l - r));
         }
     }
-    for (auto d: diff_set) {
+    for (auto d : diff_set) {
         for (int i = 0; i < lags.size(); i++) {
             auto it = lag_num.find(lags[i] - d);
             if (it != lag_num.end()) {
-                diffs.push_back({it->second, d, i, lags[i]});
+                diffs_.push_back({it->second, d, i, lags[i]});
             }
         }
     }
 }
 
-Eigen::SparseMatrix<double> CachedWTransform::operator() (size_t T, const VectorXd& w) const {
+SparseMatrix<double> CachedWTransform::operator()(size_t T,
+                                                  const VectorXd& w) const {
     VectorXd D = VectorXd::Zero(T);
 
     double wsum = -1;
-    for (int i = 0; i < lags.size(); i++) {
+    for (int i = 0; i < lags_.size(); i++) {
         wsum += w[i];
     }
     for (int j = 0; j < T; j++) {
         D(j) -= wsum;
     }
-    for (int i = 0; i < lags.size(); i++) {
-        for (int j = max(0, m - lags[i]); j + lags[i] < T; j++) {
+    for (int i = 0; i < lags_.size(); i++) {
+        for (int j = max(0, m_ - lags_[i]); j + lags_[i] < T; j++) {
             D(j) += wsum * w[i] / 2;
         }
     }
 
-    std::vector<Eigen::Triplet<double>> triplets;
-    for (auto [lmd_i, d, l_i, l]: diffs) {
-        for (size_t t = max(0, m - l); t + l < T; t++) {
+    vector<Triplet<double>> triplets;
+    for (auto [lmd_i, d, l_i, l] : diffs_) {
+        for (size_t t = max(0, m_ - l); t + l < T; t++) {
             auto temp = w[l_i] * w[lmd_i];
             triplets.push_back({t, t + d, -temp});
             triplets.push_back({t + d, t, -temp});
@@ -63,7 +62,7 @@ Eigen::SparseMatrix<double> CachedWTransform::operator() (size_t T, const Vector
             D(t + d) += temp;
         }
     }
-    
+
     SparseMatrix<double> Lh(T, T);
 
     for (int i = 0; i < T; i++) {
@@ -73,17 +72,9 @@ Eigen::SparseMatrix<double> CachedWTransform::operator() (size_t T, const Vector
     return Lh;
 }
 
-void optimize_X(
-    const MatrixXd& Y,
-    const Eigen::MatrixXb& Sigma,
-    const MatrixXd& F,
-    MatrixXd& X,
-    const CachedWTransform& transform,
-    const MatrixXd& W,
-    double nu,
-    double lambdaX,
-    bool verify)
-{
+void OptimizeByX(const MatrixXd& Y, const MatrixXb& omega, const MatrixXd& F,
+                 MatrixXd& X, const CachedWTransform& transform,
+                 const MatrixXd& W, double nu, double lambdaX, bool verify) {
     auto T = Y.cols();
     auto k = F.rows();
     auto n = F.cols();
@@ -94,26 +85,26 @@ void optimize_X(
         VectorXd B = VectorXd::Zero(T);
         for (int l = 0; l < F.cols(); l++) {
             for (int j = 0; j < T; j++) {
-                if (Sigma(l, j)) {
+                if (omega(l, j)) {
                     B(j) += F(i, l) * F(i, l);
                 }
             }
         }
 
         SparseMatrix<double> M = transform(T, W.row(i)) * lambdaX;
-        M += (nu/2) * lambdaX * VectorXd::Ones(T).asDiagonal();
+        M += (nu / 2) * lambdaX * VectorXd::Ones(T).asDiagonal();
         M += B.asDiagonal();
 
         if (verify) {
             assert(F != MatrixXd::Zero(F.rows(), F.cols()));
             assert(W != MatrixXd::Zero(W.rows(), W.cols()));
-            Eigen::LLT<MatrixXd> llt(M);
+            LLT<MatrixXd> llt(M);
             auto evals = MatrixXd(M).eigenvalues();
-            std::cerr << "\nEigen values: \n" << evals << std::endl;
-            assert(llt.info() != Eigen::NumericalIssue);
+            cerr << "\nEigen values: \n" << evals << endl;
+            assert(llt.info() != NumericalIssue);
         }
 
-        Eigen::ConjugateGradient<SparseMatrix<double>, Lower|Upper> cg;
+        ConjugateGradient<SparseMatrix<double>, Lower | Upper> cg;
         cg.compute(M);
         X.row(i) = cg.solve(mY.transpose() * F.row(i).transpose());
     }

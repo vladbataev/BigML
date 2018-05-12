@@ -2,8 +2,8 @@
 
 #include <cstdlib>
 
-#include "factor.h"
 #include "X.h"
+#include "factor.h"
 
 using namespace Eigen;
 
@@ -12,17 +12,17 @@ TEST(Factor, LossDecreases) {
 
     std::vector<int> lags{1, 5, 10};
     MatrixXd Y = MatrixXd::Random(50, 50);
-    MatrixXb sigma = Eigen::MatrixXb::Ones(Y.rows(), Y.cols());
+    MatrixXb omega = Eigen::MatrixXb::Ones(Y.rows(), Y.cols());
     Regularizer opts{lags, 1.0, 1.0, 1.0, 1.0};
     auto lat_dim = 2;
     auto steps = 5;
 
     auto [Wt, result] = Init(Y, opts, lat_dim);
-    auto loss = Loss(Y, sigma, opts, result);
+    auto loss = Loss(Y, omega, opts, result);
 
     for (size_t i = 0; i < 3; i++) {
-        Step(Y, sigma, opts, result, Wt, true);
-        auto after = Loss(Y, sigma, opts, result);
+        Step(Y, omega, opts, result, Wt, true);
+        auto after = Loss(Y, omega, opts, result);
         EXPECT_LE(after + 1e-4, loss);
         loss = after;
     }
