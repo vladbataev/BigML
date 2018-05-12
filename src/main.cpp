@@ -161,7 +161,7 @@ int main(int argc, const char* argv[]) {
     auto lambdaF = vm["lambdaF"].as<double>();
     auto nu = vm["nu"].as<double>();
     auto eval =  vm["eval"].as<bool>();
-    auto predictions_out = vm["predictions_out"].as<string>();
+    auto predictions_out = vm["predictions_out"].as<std::string>();
 
     std::set<size_t> dropped_columns;
     for (const auto& d : drop_columns) {
