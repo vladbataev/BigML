@@ -1,6 +1,4 @@
-# BigML
-
-It is the realization for https://papers.nips.cc/paper/6160-temporal-regularized-matrix-factorization-for-high-dimensional-time-series-prediction
+It is the implementation for https://papers.nips.cc/paper/6160-temporal-regularized-matrix-factorization-for-high-dimensional-time-series-prediction
 Additional things are script for collecting data from hitbtc (for experiments with data with small timestep), simplest trading bots, reinforcement learning bots(in future)
 
 # Preparing of shad datasets 
@@ -11,3 +9,23 @@ So for all data except days we prepared two datasets - of such huge intersection
 # Collecting hitbtc datasets
 We collected some data from the hitbtc. For every currencies pair we have some time series, with frequency about 1 measurement per second, but unfortunately the times between neibour measurements are not exactly one second, but some value close to it. Also sometimes there are huge delays with no data for some very huge intervals like 10-20 seconds. We decided to treat it this way - we converted this to equidistant dataset with delay equal 100 seconds. In the case when all is normal we use linear interpolation, in the case of mentioned earlier missing intervals we put to such places missing values. Eventually hitbtc dataset consist of 3 datasets for btc, usd and eth markets, with common timestamps and one joint dataset with this common timestamps.
 
+# Requirements
+
+* cmake
+* Eigen >= 3.3
+* Boost >= 1.62
+* (optional) openmp for threading support
+* (optional) google test for tests
+
+# Build
+src directory is standard cmake project. Target binary is main. To build tests use -Dtest=ON.
+
+# Usage
+
+Use **main --help** to see usage.
+
+Our algorithm assumes *train_start < train_end <= test_start < test_end*.
+
+For parameters description use this formula
+
+![](optim.png)
