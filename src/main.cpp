@@ -57,7 +57,7 @@ void InsertRow(std::vector<std::vector<std::optional<double>>>& dataset,
     for (size_t i = 0; i < row.size(); ++i) {
         if (dropped_columns.find(i) == dropped_columns.end()) {
             std::string value = row[i];
-            std::replace(value.begin(), value.end(), ',', '.');
+            //std::replace(value.begin(), value.end(), ',', '.');
             if (value != "") {
                 dataset.back().push_back(std::stof(value));
             } else {
@@ -66,6 +66,19 @@ void InsertRow(std::vector<std::vector<std::optional<double>>>& dataset,
         }
     }
 }
+
+std::vector<std::tuple<double, double>> Standardize(MatrixXd& matrix) {
+    int T = matrix.cols();
+    int n = matrix.rows();
+    std::vector<std::tuple<double, double>> statistics;
+    for (int l = 0; l < T; ++l) {
+        double mean = matrix.col(l).mean();
+        double sigma = sqrt((matrix.col(l) - mean * VectorXd::Ones(n)).squaredNorm() / n);
+        matrix.col(l) = (matrix.col(l) - mean * VectorXd::Ones(n)) / sigma;
+        statistics.emplace_back(mean, sigma);
+    }
+    return statistics;
+};
 
 std::tuple<MatrixXd, MatrixXb> ToEigenMatrices(
     const std::vector<std::vector<std::optional<double>>> data,
@@ -131,6 +144,7 @@ int main(int argc, const char* argv[]) {
             po::value<std::vector<int>>()->multitoken()->default_value(default_lags, "1 5 10"),
             "lags list")
         ("eval", po::value<bool>()->default_value(false), "calculate metrics if known true values")
+        ("standardize", po::value<bool>()->default_value(true), "standardize train data")
         ("verbose", po::value<bool>()->default_value(false), "verbose all shit")
         ("separator", po::value<char>()->default_value(';'), "separator for csv")
         ("predictions_out",
@@ -156,6 +170,7 @@ int main(int argc, const char* argv[]) {
     auto timestamp_column = vm["timestamp_column"].as<size_t>();
     auto steps = vm["steps"].as<size_t>();
     auto verbose = vm["verbose"].as<bool>();
+    auto standardize = vm["standardize"].as<bool>();
     auto lat_dim = vm["lat_dim"].as<size_t>();
     auto lambdaX = vm["lambdaX"].as<double>();
     auto lambdaW = vm["lambdaW"].as<double>();
@@ -205,6 +220,10 @@ int main(int argc, const char* argv[]) {
     auto [train_matrix, train_omega] =
         ToEigenMatrices(train_data, timestamp_column);
 
+    std::vector<std::tuple<double, double>> statistics;
+    if (standardize) {
+        statistics = Standardize(train_matrix);
+    }
     MatrixXd test_matrix;
     MatrixXb test_omega;
     if (test_data.size() > 0) {
@@ -227,6 +246,13 @@ int main(int argc, const char* argv[]) {
     }
 
     auto predictions = Predict(factor, lags, test_start_index, test_end_index);
+    if (standardize) {
+        for (int l = 0; l < predictions.cols(); ++l) {
+            predictions.col(l) = predictions.col(l) * std::get<1>(statistics[l]) +
+                    VectorXd::Ones(predictions.rows()) * std::get<0>(statistics[l]);
+        }
+    }
+
     if (eval) {
         SavePredictions(predictions, test_timestamps, predictions_out);
         std::cout << "RMSE: " << RMSE(test_matrix, predictions, test_omega) << "\n";
