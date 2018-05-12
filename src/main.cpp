@@ -233,10 +233,8 @@ int main(int argc, const char* argv[]) {
         std::cout << "ND: " << ND(test_matrix, predictions, test_omega) << "\n";
     } else {
         test_timestamps.clear();
-        double t = test_start;
-        while (t < test_end) {
-            test_timestamps.push_back(t);
-            t += time_step;
+        for (int i = 0; i < predictions.cols(); i++) {
+            test_timestamps.push_back(test_start + time_step * i);
         }
         SavePredictions(predictions, test_timestamps, predictions_out);
     }
