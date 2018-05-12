@@ -94,6 +94,21 @@ std::tuple<MatrixXd, MatrixXb> ToEigenMatrices(
     return std::make_tuple(matrix, omega);
 }
 
+void SavePredictions(const MatrixXd& predictions,
+                     std::vector<size_t> timestamps, string out_csv) {
+    ofstream myfile;
+    myfile.open (out_csv);
+    for (size_t i = 0; i < predictions.cols(); ++i) {
+        myfile << timestamps[i];
+        for (size_t j = 0; j < predictions.rows(); ++j) {
+            myfile << "," << predictions(j , i);
+        }
+        myfile << "\n";
+    }
+    myfile.close();
+}
+
+
 int main(int argc, const char* argv[]) {
     po::options_description desc("Allowed options");
     std::vector<int> default_lags = {1, 5, 10};
@@ -106,14 +121,21 @@ int main(int argc, const char* argv[]) {
         ("steps", po::value<size_t>()->default_value(100), "optimization steps")
         ("train_start", po::value<long>(), "train start timestamp")
         ("train_end", po::value<long>(), "train end timestamp")
-        ("test_start", po::value<long>()->default_value(-1), "test start timestamp")
-        ("test_end", po::value<long>()->default_value(-1), "test end timestamp")
+        ("test_start", po::value<long>(), "test start timestamp")
+        ("test_end", po::value<long>(), "test end timestamp")
         ("lat_dim", po::value<size_t>()->default_value(2), "latent embedding dimension")
-        ("drop_columns", po::value<std::vector<size_t>>()->multitoken()->default_value(default_drop_columns, ""), "drop columns list")
-        ("lags", po::value<std::vector<int>>()->multitoken()->default_value(default_lags, "1 5 10"), "lags list")
+        ("drop_columns",
+           po::value<std::vector<size_t>>()->multitoken()->default_value(default_drop_columns, ""),
+            "drop columns list")
+        ("lags",
+            po::value<std::vector<int>>()->multitoken()->default_value(default_lags, "1 5 10"),
+            "lags list")
+        ("eval", po::value<bool>()->default_value(false), "calculate metrics if known true values")
         ("verbose", po::value<bool>()->default_value(false), "verbose all shit")
         ("separator", po::value<char>()->default_value(';'), "separator for csv")
-        ("predictions_out", po::value<string>()->default_value(""), "predictions output filename")
+        ("predictions_out",
+           po::value<string>()->default_value("predictions.csv"),
+           "predictions output filename")
         ("lambdaX", po::value<double>()->default_value(1), "lambdaX")
         ("lambdaW", po::value<double>()->default_value(1), "lambdaW")
         ("lambdaF", po::value<double>()->default_value(1), "lambdaF")
@@ -139,6 +161,8 @@ int main(int argc, const char* argv[]) {
     auto lambdaW = vm["lambdaW"].as<double>();
     auto lambdaF = vm["lambdaF"].as<double>();
     auto nu = vm["nu"].as<double>();
+    auto eval =  vm["eval"].as<bool>();
+    auto predictions_out = vm["predictions_out"].as<string>();
 
     std::set<size_t> dropped_columns;
     for (const auto& d : drop_columns) {
@@ -153,6 +177,7 @@ int main(int argc, const char* argv[]) {
     std::vector<std::vector<std::optional<double>>> train_data;
     std::vector<std::vector<std::optional<double>>> test_data;
 
+    std::vector<size_t > test_timestamps;
     while (file >> row) {
         if (std::stol(row[timestamp_column]) >= train_start &&
             std::stol(row[timestamp_column]) < train_end) {
@@ -161,6 +186,7 @@ int main(int argc, const char* argv[]) {
         if (std::stol(row[timestamp_column]) >= test_start &&
             std::stol(row[timestamp_column]) < test_end) {
             InsertRow(test_data, row, dropped_columns);
+            test_timestamps.push_back(std::stol(row[timestamp_column]));
         }
     }
 
@@ -199,7 +225,11 @@ int main(int argc, const char* argv[]) {
     if (test_data.size() > 0) {
         test_end_index = test_start_index + test_data.size();
     }
+
     auto predictions = Predict(factor, lags, test_start_index, test_end_index);
-    std::cout << "RMSE: " << RMSE(test_matrix, predictions, test_omega) << "\n";
-    std::cout << "ND: " << ND(test_matrix, predictions, test_omega) << "\n";
+    SavePredictions(predictions, test_timestamps, predictions_out);
+    if (eval) {
+        std::cout << "RMSE: " << RMSE(test_matrix, predictions, test_omega) << "\n";
+        std::cout << "ND: " << ND(test_matrix, predictions, test_omega) << "\n";
+    }
 }
