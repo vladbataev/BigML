@@ -99,35 +99,25 @@ int main(int argc, const char* argv[]) {
     std::vector<int> default_lags = {1, 5, 10};
     std::vector<size_t> default_drop_columns = {1};
 
-    desc.add_options()("help", "produce help message")(
-        "dataset_path", po::value<std::string>(), "path to dataset")(
-        "timestamp_column", po::value<size_t>()->default_value(0),
-        "timestamp column")("steps", po::value<size_t>()->default_value(100),
-                            "optimization steps")(
-        "train_start", po::value<long>(), "train start timestamp")(
-        "train_end", po::value<long>(), "train end timestamp")(
-        "test_start", po::value<long>()->default_value(-1),
-        "test start timestamp")(
-        "test_end", po::value<long>()->default_value(-1), "test end timestamp")(
-        "lat_dim", po::value<size_t>()->default_value(2),
-        "latent embedding dimension")(
-        "drop_columns",
-        po::value<std::vector<size_t>>()->multitoken()->default_value(
-            default_drop_columns, ""),
-        "drop columns list")(
-        "lags",
-        po::value<std::vector<int>>()->multitoken()->default_value(default_lags,
-                                                                   "1 5 10"),
-        "lags list")("verbose", po::value<bool>()->default_value(false),
-                     "verbose all shit")("separator",
-                                         po::value<char>()->default_value(';'),
-                                         "separator for csv")(
-        "predictions_out", po::value<string>()->default_value(""),
-        "predictions output filename")(
-        "lambdaX", po::value<double>()->default_value(1), "lambdaX")(
-        "lambdaW", po::value<double>()->default_value(1), "lambdaW")(
-        "lambdaF", po::value<double>()->default_value(1), "lambdaF")(
-        "nu", po::value<double>()->default_value(1), "nu");
+    desc.add_options()
+        ("help", "produce help message")
+        ("dataset_path", po::value<std::string>(), "path to dataset")
+        ("timestamp_column", po::value<size_t>()->default_value(0), "timestamp column")
+        ("steps", po::value<size_t>()->default_value(100), "optimization steps")
+        ("train_start", po::value<long>(), "train start timestamp")
+        ("train_end", po::value<long>(), "train end timestamp")
+        ("test_start", po::value<long>()->default_value(-1), "test start timestamp")
+        ("test_end", po::value<long>()->default_value(-1), "test end timestamp")
+        ("lat_dim", po::value<size_t>()->default_value(2), "latent embedding dimension")
+        ("drop_columns", po::value<std::vector<size_t>>()->multitoken()->default_value(default_drop_columns, ""), "drop columns list")
+        ("lags", po::value<std::vector<int>>()->multitoken()->default_value(default_lags, "1 5 10"), "lags list")
+        ("verbose", po::value<bool>()->default_value(false), "verbose all shit")
+        ("separator", po::value<char>()->default_value(';'), "separator for csv")
+        ("predictions_out", po::value<string>()->default_value(""), "predictions output filename")
+        ("lambdaX", po::value<double>()->default_value(1), "lambdaX")
+        ("lambdaW", po::value<double>()->default_value(1), "lambdaW")
+        ("lambdaF", po::value<double>()->default_value(1), "lambdaF")
+        ("nu", po::value<double>()->default_value(1), "nu");
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -197,11 +187,7 @@ int main(int argc, const char* argv[]) {
     }
 
     auto factor = Factorize(train_matrix, train_omega,
-                            Regularizer{.lags = lags,
-                                        .lambdaX = lambdaX,
-                                        .lambdaF = lambdaF,
-                                        .lambdaW = lambdaW,
-                                        .nu = nu},
+                            {lags, lambdaW, lambdaX, lambdaF, nu},
                             lat_dim, steps, verbose);
     if (verbose) {
         std::cout << factor.F << "\n";
