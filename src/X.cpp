@@ -104,8 +104,8 @@ void OptimizeByX(const MatrixXd& Y, const MatrixXb& omega, const MatrixXd& F,
             assert(llt.info() != NumericalIssue);
         }
 
-        ConjugateGradient<SparseMatrix<double>, Lower, DiagonalPreconditioner<double>> cg;
-        cg.setMaxIterations(k);
+        ConjugateGradient<SparseMatrix<double>, Lower | Upper, IncompleteCholesky<double>> cg;
+        cg.setMaxIterations(2);
         cg.compute(M);
         X.row(i) = cg.solve(mY.transpose() * F.row(i).transpose());
     }
