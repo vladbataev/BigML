@@ -80,7 +80,7 @@ void OptimizeByX(const MatrixXd& Y, const MatrixXb& omega, const MatrixXd& F,
     auto n = F.cols();
 
     for (int i = 0; i < k; i++) {
-        MatrixXd mY = Y - F.transpose() * X + F.row(i).transpose() * X.row(i);
+        MatrixXd mY = (Y - F.transpose() * X + F.row(i).transpose() * X.row(i)).cwiseProduct(omega.cast<double>());
 
         VectorXd B = VectorXd::Zero(T);
         for (int l = 0; l < F.cols(); l++) {
@@ -104,7 +104,7 @@ void OptimizeByX(const MatrixXd& Y, const MatrixXb& omega, const MatrixXd& F,
             assert(llt.info() != NumericalIssue);
         }
 
-        ConjugateGradient<SparseMatrix<double>, Lower | Upper, IncompleteCholesky<double>> cg;
+        ConjugateGradient<SparseMatrix<double>, Lower, IncompleteCholesky<double>> cg;
         cg.setMaxIterations(2);
         cg.compute(M);
         X.row(i) = cg.solve(mY.transpose() * F.row(i).transpose());
