@@ -34,7 +34,7 @@ MatrixXd OptimizeByW(const MatrixXd& X, const std::vector<int>& lags,
         }
         LLT<MatrixXd> llt;
         llt.compute(feature_matrix.transpose() * feature_matrix +
-                    lambda_W / lambda_X *
+                    2 * lambda_W / lambda_X *
                         MatrixXd::Identity(num_lags, num_lags));
         VectorXd w_r = llt.solve(feature_matrix.transpose() * target);
         optimal_W.row(r) = w_r;

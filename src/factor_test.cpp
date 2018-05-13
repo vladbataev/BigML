@@ -25,7 +25,7 @@ TEST(Factor, LossDecreases) {
     for (size_t i = 0; i < 30; i++) {
         auto check = [&](auto msg) {
             auto after = Loss(Y, omega, opts, result);
-            EXPECT_LE(after + 1e-4, loss) << "i=" << i << " " << msg;
+            EXPECT_LE(after, loss) << "i=" << i << " " << msg;
             loss = after;
         };
         result.W = OptimizeByW(result.X, opts.lags, opts.lambdaX, opts.lambdaW);
@@ -66,7 +66,7 @@ TEST(Factor, MissingValues) {
     for (size_t i = 0; i < 30; i++) {
         auto check = [&](auto msg) {
             auto after = Loss(Y, omega, opts, result);
-            EXPECT_LE(after + 1e-4, loss) << "i=" << i << " " << msg;
+            EXPECT_LE(after, loss) << "i=" << i << " " << msg;
             loss = after;
         };
         result.W = OptimizeByW(result.X, opts.lags, opts.lambdaW, opts.lambdaX);
