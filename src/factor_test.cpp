@@ -78,5 +78,3 @@ TEST(Factor, MissingValues) {
         check("X");
     }
 }
-
-
