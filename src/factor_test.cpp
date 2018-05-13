@@ -48,8 +48,8 @@ TEST(Factor, MissingValues) {
     auto loss = Loss(Y, omega, opts, result);
 
     for (int i = 0; i < Y.cols(); i++) {
-        for (int j = 0; j < Y.rows() * 0.15; j++) {
-            omega(i, abs(rand())%Y.rows()) = false;
+        for (int j = 0; j < Y.rows() * 0.05; j++) {
+            omega(abs(rand())%Y.rows(), i) = false;
         }
     }
 
