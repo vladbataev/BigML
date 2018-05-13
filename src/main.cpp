@@ -61,7 +61,7 @@ void InsertRow(std::vector<std::vector<std::optional<double>>>& dataset,
             if (value != "") {
                 dataset.back().push_back(std::stof(value));
             } else {
-                dataset.back().push_back(std::nullopt);
+                dataset.back().push_back(0);
             }
         }
     }

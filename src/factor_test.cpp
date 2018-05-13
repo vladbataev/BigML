@@ -49,12 +49,12 @@ TEST(Factor, MissingValues) {
 
     for (int i = 0; i < Y.cols(); i++) {
         for (int j = 0; j < Y.rows() * 0.15; j++) {
-            omega(i, abs(rand())%Y.rows()) = false;
+            omega(abs(rand())%Y.rows(), i) = false;
         }
     }
 
     for (size_t i = 0; i < 3; i++) {
-        Step(Y, omega, opts, result, Wt, false);
+        Step(Y, omega, opts, result, Wt, true);
         auto after = Loss(Y, omega, opts, result);
         EXPECT_LE(after + 1e-4, loss) << "i=" << i;
         loss = after;

@@ -50,7 +50,7 @@ void Step(const MatrixXd& Y, const MatrixXb& omega, const Regularizer& opts,
     };
     result.W = OptimizeByW(result.X, opts.lags, opts.lambdaX, opts.lambdaW);
     print("W");
-    result.F = OptimizeByF(Y, result.X, opts.lambdaF);
+    result.F = OptimizeByFALS(Y, result.X, omega, opts.lambdaF);
     print("F");
     OptimizeByX(Y, omega, result.F, result.X, Wt, result.W, opts.nu,
                 opts.lambdaX, verify);

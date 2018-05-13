@@ -45,7 +45,7 @@ if (test)
         W_test.cpp
         X_test.cpp
         factor_test.cpp
-    )
+        F_test.cpp)
 
     target_link_libraries(runTests optimizers GTest::GTest GTest::Main)
 
