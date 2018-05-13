@@ -125,6 +125,11 @@ void SavePredictions(const MatrixXd& predictions,
     myfile.close();
 }
 
+bool CheckTimestamps(long train_start, long train_end,
+                     long test_start, long test_end) {
+
+}
+
 
 int main(int argc, const char* argv[]) {
     po::options_description desc("Allowed options");
@@ -192,17 +197,19 @@ int main(int argc, const char* argv[]) {
     for (const auto& d : drop_columns) {
         dropped_columns.insert(d);
     }
+    
+    auto expect = [](bool condition, std::string message) {
+        if (!condition) {
+            throw std::invalid_argument(message);
+        }
+    };
 
-    if (lambdaF < 0 || lambdaW < 0 || lambdaX < 0 || eta < 0) {
-        std::cerr << "non-convex optimization target";
-        return 1;
-    }
+    expect(lambdaF < 0 || lambdaW < 0 || lambdaX < 0 || eta < 0, "non-convex optimization target");
+
+    expect(train_start < train_end <= test_start < test_end, "Timestamps order: train_start < train_end <= test_start < test_end");
 
     std::ifstream file(dataset_path);
-    if (file.fail()) {
-        std::cerr << "failed to open " << dataset_path;
-        return 1;
-    }
+    expect(!file.fail(), "failed to open " + dataset_path);
 
     CSVRow row(sep);
     file >> row;
@@ -213,6 +220,7 @@ int main(int argc, const char* argv[]) {
 
     std::vector<double> test_timestamps;
     while (file >> row) {
+        expect(row.size() == n, "invalid csv file");
         if (std::stol(row[timestamp_column]) >= train_start &&
             std::stol(row[timestamp_column]) < train_end) {
             InsertRow(train_data, row, dropped_columns);
@@ -224,18 +232,16 @@ int main(int argc, const char* argv[]) {
         }
     }
 
-    if (train_data.empty()) {
-        std::cerr << "Train_data is empty. Double check parameters.";
-        return 1;
-    }
+    expect(!train_data.empty(), "Train_data is empty. Double check parameters.");
+    expect(!eval || !test_data.empty(), "Test data is empty. Nothing to eval.");
 
-    int timestamp_shitf = 0;
+    int timestamp_shift = 0;
     for (auto i : dropped_columns) {
         if (i < timestamp_column) {
-            ++timestamp_shitf;
+            ++timestamp_shift;
         }
     }
-    timestamp_column -= timestamp_shitf;
+    timestamp_column -= timestamp_shift;
 
     double time_step = (*train_data.back()[timestamp_column] -
                         *train_data[0][timestamp_column]) /
