@@ -48,7 +48,7 @@ void Step(const MatrixXd& Y, const MatrixXb& omega, const Regularizer& opts,
                       << Loss(Y, omega, opts, result) << std::endl;
         }
     };
-    result.W = OptimizeByW(result.X, opts.lags, opts.lambdaX, opts.lambdaW);
+    result.W = OptimizeByW(result.X, opts.lags, opts.lambdaW, opts.lambdaX);
     print("W");
     result.F = OptimizeByFALS(Y, result.X, omega, opts.lambdaF);
     print("F");
@@ -65,7 +65,7 @@ Factorization Factorize(MatrixXd Y, MatrixXb omega, Regularizer opts,
         std::cerr << "Loss: " << Loss(Y, omega, opts, result) << "\n";
     }
     for (size_t i = 0; i < steps; i++) {
-        Step(Y, omega, opts, result, Wt, false);
+        Step(Y, omega, opts, result, Wt, true);
         if (verbose) {
             std::cerr << "Loss after" << i
                       << "th iteration: " << Loss(Y, omega, opts, result)

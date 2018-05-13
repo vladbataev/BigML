@@ -69,7 +69,7 @@ TEST(Factor, MissingValues) {
             EXPECT_LE(after + 1e-4, loss) << "i=" << i << " " << msg;
             loss = after;
         };
-        result.W = OptimizeByW(result.X, opts.lags, opts.lambdaX, opts.lambdaW);
+        result.W = OptimizeByW(result.X, opts.lags, opts.lambdaW, opts.lambdaX);
         check("W");
         result.F = OptimizeByFALS(Y, result.X, omega, opts.lambdaF);
         check("F");

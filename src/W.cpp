@@ -6,12 +6,12 @@ using namespace Eigen;
 MatrixXd ConstructFeatureMatrix(const VectorXd& row,
                                 const std::vector<int>& lags, long L) {
     long T = row.size();
-    long m = L + 1;
+    long m = L;
     long num_lags = lags.size();
     MatrixXd feature_matrix = MatrixXd::Zero(T - m, num_lags);
     for (long t = m; t < T; ++t) {
         for (long j = 0; j < num_lags; ++j) {
-            feature_matrix(t - m, j) = row(m - lags[j]);
+            feature_matrix(t - m, j) = row(t - lags[j]);
         }
     }
     return feature_matrix;
@@ -20,7 +20,7 @@ MatrixXd ConstructFeatureMatrix(const VectorXd& row,
 MatrixXd OptimizeByW(const MatrixXd& X, const std::vector<int>& lags,
                      double lambda_W, double lambda_X) {
     long L = *std::max_element(lags.begin(), lags.end());
-    long m = L + 1;
+    long m = L;
     long k = X.rows();
     long T = X.cols();
     long num_lags = lags.size();
