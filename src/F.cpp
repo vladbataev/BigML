@@ -33,16 +33,10 @@ Eigen::MatrixXd OptimizeByFALS(const Eigen::MatrixXd& Y, const Eigen::MatrixXd& 
     Eigen::MatrixXd F = Eigen::MatrixXd::Zero(n, k);
 
     for (int u = 0; u < n; ++u) {
-        //Eigen::MatrixXd cum_sum = Eigen::MatrixXd::Identity(k, k) * lambda;
-        //for (int i = 0; i < T; ++i) {
-        //    if (omega(u, i)) {
-        //        cum_sum += X.col(i) * X.col(i).transpose();
-        //    }
-        //}
-        auto nullify = [&](auto X, auto row) {
-            return (X.array().rowwise() * row.array()).matrix();
+        auto nullify = [&](auto X) {
+            return (X.array().rowwise() * omega.cast<double>().row(u).array()).matrix();
         };
-        F.row(u) = (nullify(X, omega.cast<double>().row(u)) * X.transpose()).inverse() *
+        F.row(u) = (Eigen::MatrixXd::Identity(k, k) * lambda + nullify(X) * X.transpose()).inverse() *
            X * (Y.cwiseProduct(omega.cast<double>())).row(u).transpose();
     }
     return F.transpose();
