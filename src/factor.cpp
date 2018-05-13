@@ -28,13 +28,11 @@ double Loss(const MatrixXd& Y, const MatrixXb& omega, const Regularizer& opts,
     auto L = *std::max_element(opts.lags.begin(), opts.lags.end());
     for (int r = 0; r < result.X.rows(); ++r) {
         for (int t = L; t < T; ++t) {
-            if (omega(r, t)) {
-                auto tmp = result.X(r, t);
-                for (int l = 0; l < opts.lags.size(); ++l) {
-                    tmp -= result.W(r, l) * result.X(r, t - opts.lags[l]);
-                }
-                x_part += tmp * tmp * opts.lambdaX / 2;
+            auto tmp = result.X(r, t);
+            for (int l = 0; l < opts.lags.size(); ++l) {
+                tmp -= result.W(r, l) * result.X(r, t - opts.lags[l]);
             }
+            x_part += tmp * tmp * opts.lambdaX / 2;
         }
     }
     return easy + x_part;
