@@ -92,8 +92,7 @@ void OptimizeByX(const MatrixXd& Y, const MatrixXb& omega, const MatrixXd& F,
         }
 
         SparseMatrix<double> M = transform(T, W.row(i)) * lambdaX;
-        M += (eta / 2) * lambdaX * VectorXd::Ones(T).asDiagonal();
-        M += B.asDiagonal();
+        M += (B + (eta / 2) * lambdaX * VectorXd::Ones(T)).asDiagonal();
 
         if (verify) {
             assert(F != MatrixXd::Zero(F.rows(), F.cols()));
