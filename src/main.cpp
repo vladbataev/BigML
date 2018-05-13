@@ -129,7 +129,7 @@ void SavePredictions(const MatrixXd& predictions,
 int main(int argc, const char* argv[]) {
     po::options_description desc("Allowed options");
     std::vector<int> default_lags = {1, 5, 10};
-    std::vector<size_t> default_drop_columns = {1};
+    std::vector<size_t> default_drop_columns = {};
 
     desc.add_options()
         ("help", "produce help message")
@@ -143,7 +143,7 @@ int main(int argc, const char* argv[]) {
         ("lat_dim", po::value<size_t>()->default_value(2), "latent embedding dimension")
         ("drop_columns",
            po::value<std::vector<size_t>>()->multitoken()->default_value(default_drop_columns, ""),
-            "drop columns list")
+            "drop columns list, default is empty")
         ("lags",
             po::value<std::vector<int>>()->multitoken()->default_value(default_lags, "1 5 10 20 25 100"),
             "lags list")
@@ -162,8 +162,7 @@ int main(int argc, const char* argv[]) {
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
     po::notify(vm);
-
-    if (vm.count("help")) {
+    if (vm.count("help") or argc == 1) {
         std::cout << desc << "\n";
         return 1;
     }
