@@ -125,11 +125,6 @@ void SavePredictions(const MatrixXd& predictions,
     myfile.close();
 }
 
-bool CheckTimestamps(long train_start, long train_end,
-                     long test_start, long test_end) {
-
-}
-
 
 int main(int argc, const char* argv[]) {
     po::options_description desc("Allowed options");
