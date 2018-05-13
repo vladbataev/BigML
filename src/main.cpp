@@ -121,6 +121,11 @@ void SavePredictions(const MatrixXd& predictions,
     myfile.close();
 }
 
+bool CheckTimestamps(long train_start, long train_end,
+                     long test_start, long test_end) {
+
+}
+
 
 int main(int argc, const char* argv[]) {
     po::options_description desc("Allowed options");
@@ -187,6 +192,11 @@ int main(int argc, const char* argv[]) {
     std::set<size_t> dropped_columns;
     for (const auto& d : drop_columns) {
         dropped_columns.insert(d);
+    }
+
+    if (train_start < train_end <= test_start < test_end) {
+        throw std::invalid_argument(
+           "Timestamps order: train_start < train_end <= test_start < test_end");
     }
 
     std::ifstream file(dataset_path);
