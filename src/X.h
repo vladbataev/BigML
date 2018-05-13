@@ -24,4 +24,4 @@ class CachedWTransform {
 void OptimizeByX(const Eigen::MatrixXd& Y, const Eigen::MatrixXb& omega,
                  const Eigen::MatrixXd& F, Eigen::MatrixXd& X,
                  const CachedWTransform& transform, const Eigen::MatrixXd& W,
-                 double nu, double lambdaX, bool verify = false);
+                 double eta, double lambdaX, bool verify = false);

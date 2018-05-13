@@ -57,11 +57,11 @@ void InsertRow(std::vector<std::vector<std::optional<double>>>& dataset,
     for (size_t i = 0; i < row.size(); ++i) {
         if (dropped_columns.find(i) == dropped_columns.end()) {
             std::string value = row[i];
-            //std::replace(value.begin(), value.end(), ',', '.');
+            std::replace(value.begin(), value.end(), ',', '.');
             if (value != "") {
                 dataset.back().push_back(std::stof(value));
             } else {
-                dataset.back().push_back(0);
+                dataset.back().push_back(std::nullopt);
             }
         }
     }
@@ -153,7 +153,7 @@ int main(int argc, const char* argv[]) {
         ("lambdaX", po::value<double>()->default_value(1), "lambdaX")
         ("lambdaW", po::value<double>()->default_value(1), "lambdaW")
         ("lambdaF", po::value<double>()->default_value(1), "lambdaF")
-        ("nu", po::value<double>()->default_value(1), "nu");
+        ("eta", po::value<double>()->default_value(1), "eta");
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -180,7 +180,7 @@ int main(int argc, const char* argv[]) {
     auto lambdaX = vm["lambdaX"].as<double>();
     auto lambdaW = vm["lambdaW"].as<double>();
     auto lambdaF = vm["lambdaF"].as<double>();
-    auto nu = vm["nu"].as<double>();
+    auto eta = vm["eta"].as<double>();
     auto eval =  vm["eval"].as<bool>();
     auto predictions_out = vm["predictions_out"].as<std::string>();
 
@@ -237,7 +237,7 @@ int main(int argc, const char* argv[]) {
     }
 
     auto factor = Factorize(train_matrix, train_omega,
-                            {lags, lambdaW, lambdaX, lambdaF, nu},
+                            {lags, lambdaW, lambdaX, lambdaF, eta},
                             lat_dim, steps, verbose);
     if (verbose) {
         std::cout << factor.F << "\n";

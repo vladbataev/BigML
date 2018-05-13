@@ -8,7 +8,7 @@ struct Regularizer {
     double lambdaW;
     double lambdaX;
     double lambdaF;
-    double nu;
+    double eta;
 };
 
 struct Factorization {

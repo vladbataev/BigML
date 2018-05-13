@@ -74,7 +74,7 @@ SparseMatrix<double> CachedWTransform::operator()(size_t T,
 
 void OptimizeByX(const MatrixXd& Y, const MatrixXb& omega, const MatrixXd& F,
                  MatrixXd& X, const CachedWTransform& transform,
-                 const MatrixXd& W, double nu, double lambdaX, bool verify) {
+                 const MatrixXd& W, double eta, double lambdaX, bool verify) {
     auto T = Y.cols();
     auto k = F.rows();
     auto n = F.cols();
@@ -92,7 +92,7 @@ void OptimizeByX(const MatrixXd& Y, const MatrixXb& omega, const MatrixXd& F,
         }
 
         SparseMatrix<double> M = transform(T, W.row(i)) * lambdaX;
-        M += (nu / 2) * lambdaX * VectorXd::Ones(T).asDiagonal();
+        M += (eta / 2) * lambdaX * VectorXd::Ones(T).asDiagonal();
         M += B.asDiagonal();
 
         if (verify) {

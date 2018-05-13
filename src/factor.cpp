@@ -22,7 +22,7 @@ double Loss(const MatrixXd& Y, const MatrixXb& omega, const Regularizer& opts,
                       .squaredNorm() +
                   opts.lambdaF * result.F.squaredNorm() +
                   opts.lambdaW * result.W.squaredNorm() +
-                  opts.lambdaX * opts.nu / 2 * result.X.squaredNorm();
+                  opts.lambdaX * opts.eta / 2 * result.X.squaredNorm();
     double x_part = 0;
     auto T = Y.cols();
     auto L = *std::max_element(opts.lags.begin(), opts.lags.end());
@@ -52,7 +52,7 @@ void Step(const MatrixXd& Y, const MatrixXb& omega, const Regularizer& opts,
     print("W");
     result.F = OptimizeByFALS(Y, result.X, omega, opts.lambdaF);
     print("F");
-    OptimizeByX(Y, omega, result.F, result.X, Wt, result.W, opts.nu,
+    OptimizeByX(Y, omega, result.F, result.X, Wt, result.W, opts.eta,
                 opts.lambdaX, verify);
     print("X");
 }
