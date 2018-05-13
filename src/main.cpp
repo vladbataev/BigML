@@ -59,7 +59,11 @@ void InsertRow(std::vector<std::vector<std::optional<double>>>& dataset,
             std::string value = row[i];
             std::replace(value.begin(), value.end(), ',', '.');
             if (value != "") {
-                dataset.back().push_back(std::stof(value));
+                size_t idx;
+                dataset.back().push_back(std::stof(value, &idx));
+                if (idx != value.size()) {
+                    throw std::runtime_error("invalid value in csv row");
+                }
             } else {
                 dataset.back().push_back(std::nullopt);
             }
@@ -189,7 +193,17 @@ int main(int argc, const char* argv[]) {
         dropped_columns.insert(d);
     }
 
+    if (lambdaF < 0 || lambdaW < 0 || lambdaX < 0 || eta < 0) {
+        std::cerr << "non-convex optimization target";
+        return 1;
+    }
+
     std::ifstream file(dataset_path);
+    if (file.fail()) {
+        std::cerr << "failed to open " << dataset_path;
+        return 1;
+    }
+
     CSVRow row(sep);
     file >> row;
     size_t n = row.size() - drop_columns.size();
@@ -208,6 +222,11 @@ int main(int argc, const char* argv[]) {
             InsertRow(test_data, row, dropped_columns);
             test_timestamps.push_back(std::stof(row[timestamp_column]));
         }
+    }
+
+    if (train_data.empty()) {
+        std::cerr << "Train_data is empty. Double check parameters.";
+        return 1;
     }
 
     int timestamp_shitf = 0;
