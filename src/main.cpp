@@ -204,7 +204,7 @@ int main(int argc, const char* argv[]) {
         }
     };
 
-    expect(lambdaF < 0 || lambdaW < 0 || lambdaX < 0 || eta < 0, "non-convex optimization target");
+    expect(!(lambdaF < 0 || lambdaW < 0 || lambdaX < 0 || eta < 0), "non-convex optimization target");
 
     expect(train_start < train_end <= test_start < test_end, "Timestamps order: train_start < train_end <= test_start < test_end");
 
@@ -214,13 +214,14 @@ int main(int argc, const char* argv[]) {
     CSVRow row(sep);
     file >> row;
     size_t n = row.size() - drop_columns.size();
+    size_t first_size = row.size();
 
     std::vector<std::vector<std::optional<double>>> train_data;
     std::vector<std::vector<std::optional<double>>> test_data;
 
     std::vector<double> test_timestamps;
     while (file >> row) {
-        expect(row.size() == n, "invalid csv file");
+        expect(row.size() == first_size, "invalid csv file");
         if (std::stol(row[timestamp_column]) >= train_start &&
             std::stol(row[timestamp_column]) < train_end) {
             InsertRow(train_data, row, dropped_columns);
