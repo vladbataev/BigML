@@ -82,14 +82,7 @@ void OptimizeByX(const MatrixXd& Y, const MatrixXb& omega, const MatrixXd& F,
     for (int i = 0; i < k; i++) {
         MatrixXd mY = (Y - F.transpose() * X + F.row(i).transpose() * X.row(i)).cwiseProduct(omega.cast<double>());
 
-        VectorXd B = VectorXd::Zero(T);
-        for (int l = 0; l < F.cols(); l++) {
-            for (int j = 0; j < T; j++) {
-                if (omega(l, j)) {
-                    B(j) += F(i, l) * F(i, l);
-                }
-            }
-        }
+        VectorXd B = (F.row(i).cwiseProduct(F.row(i)) * omega.cast<double>()).transpose();
 
         SparseMatrix<double> M = transform(T, W.row(i)) * lambdaX;
         M += (B + (eta / 2) * lambdaX * VectorXd::Ones(T)).asDiagonal();
