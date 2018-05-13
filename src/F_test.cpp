@@ -29,11 +29,9 @@ TEST(F_component, Loss) {
         }
     }
 
-    for (size_t i = 0; i < 3; i++) {
-        auto before = Loss(Y, omega, opts, result);
-        auto F = OptimizeByFALS(Y, result.X, omega, 1.0, 1);
-        result.F = F;
-        auto after = Loss(Y, omega, opts, result);
-        EXPECT_LE(after + 1e-4, before) << "i=" << i;
-    }
+    auto before = Loss(Y, omega, opts, result);
+    auto F = OptimizeByFALS(Y, result.X, omega, 1.0);
+    result.F = F;
+    auto after = Loss(Y, omega, opts, result);
+    EXPECT_LE(after + 1e-4, before);
 }

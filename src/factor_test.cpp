@@ -54,7 +54,7 @@ TEST(Factor, MissingValues) {
     }
 
     for (size_t i = 0; i < 3; i++) {
-        Step(Y, omega, opts, result, Wt, true);
+        Step(Y, omega, opts, result, Wt, false);
         auto after = Loss(Y, omega, opts, result);
         EXPECT_LE(after + 1e-4, loss) << "i=" << i;
         loss = after;

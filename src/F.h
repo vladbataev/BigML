@@ -9,4 +9,4 @@ Eigen::MatrixXd OptimizeByF(const Eigen::MatrixXd& Y, const Eigen::MatrixXd& X,
                             double lambda);
 
 Eigen::MatrixXd OptimizeByFALS(const Eigen::MatrixXd& Y, const Eigen::MatrixXd& X,
-                               const Eigen::MatrixXb& omega, double lambda, int num_iterations=1);
+                               const Eigen::MatrixXb& omega, double lambda);
