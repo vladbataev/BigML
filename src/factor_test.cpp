@@ -3,6 +3,8 @@
 #include <cstdlib>
 
 #include "X.h"
+#include "W.h"
+#include "F.h"
 #include "factor.h"
 
 using namespace Eigen;
@@ -20,11 +22,19 @@ TEST(Factor, LossDecreases) {
     auto [Wt, result] = Init(Y, opts, lat_dim);
     auto loss = Loss(Y, omega, opts, result);
 
-    for (size_t i = 0; i < 3; i++) {
-        Step(Y, omega, opts, result, Wt, true);
-        auto after = Loss(Y, omega, opts, result);
-        EXPECT_LE(after + 1e-4, loss);
-        loss = after;
+    for (size_t i = 0; i < 30; i++) {
+        auto check = [&](auto msg) {
+            auto after = Loss(Y, omega, opts, result);
+            EXPECT_LE(after + 1e-4, loss) << "i=" << i << " " << msg;
+            loss = after;
+        };
+        result.W = OptimizeByW(result.X, opts.lags, opts.lambdaX, opts.lambdaW);
+        check("W");
+        result.F = OptimizeByFALS(Y, result.X, omega, opts.lambdaF);
+        check("F");
+        OptimizeByX(Y, omega, result.F, result.X, Wt, result.W, opts.eta,
+                    opts.lambdaX, false);
+        check("X");
     }
 }
 
@@ -53,10 +63,20 @@ TEST(Factor, MissingValues) {
         }
     }
 
-    for (size_t i = 0; i < 3; i++) {
-        Step(Y, omega, opts, result, Wt, false);
-        auto after = Loss(Y, omega, opts, result);
-        EXPECT_LE(after + 1e-4, loss) << "i=" << i;
-        loss = after;
+    for (size_t i = 0; i < 30; i++) {
+        auto check = [&](auto msg) {
+            auto after = Loss(Y, omega, opts, result);
+            EXPECT_LE(after + 1e-4, loss) << "i=" << i << " " << msg;
+            loss = after;
+        };
+        result.W = OptimizeByW(result.X, opts.lags, opts.lambdaX, opts.lambdaW);
+        check("W");
+        result.F = OptimizeByFALS(Y, result.X, omega, opts.lambdaF);
+        check("F");
+        OptimizeByX(Y, omega, result.F, result.X, Wt, result.W, opts.eta,
+                    opts.lambdaX, false);
+        check("X");
     }
 }
+
+
