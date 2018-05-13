@@ -159,6 +159,11 @@ int main(int argc, const char* argv[]) {
     po::store(po::parse_command_line(argc, argv, desc), vm);
     po::notify(vm);
 
+    if (vm.count("help")) {
+        std::cout << desc << "\n";
+        return 1;
+    }
+
     auto dataset_path = vm["dataset_path"].as<std::string>();
     auto train_start = vm["train_start"].as<long>();
     auto train_end = vm["train_end"].as<long>();
