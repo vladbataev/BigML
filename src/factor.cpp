@@ -39,9 +39,10 @@ double Loss(const MatrixXd& Y, const MatrixXb& omega, const Regularizer& opts,
 }
 
 void Step(const MatrixXd& Y, const MatrixXb& omega, const Regularizer& opts,
-          Factorization& result, CachedWTransform& Wt, bool verify) {
+          Factorization& result, CachedWTransform& Wt, bool verbose,
+          bool verify) {
     auto print = [&](auto msg) {
-        if (verify) {
+        if (verbose) {
             std::cerr << "loss after " << msg << " : "
                       << Loss(Y, omega, opts, result) << std::endl;
         }
@@ -63,11 +64,11 @@ Factorization Factorize(MatrixXd Y, MatrixXb omega, Regularizer opts,
         std::cerr << "Loss: " << Loss(Y, omega, opts, result) << "\n";
     }
     for (size_t i = 0; i < steps; i++) {
-        Step(Y, omega, opts, result, Wt, true);
+        Step(Y, omega, opts, result, Wt, verbose, false);
         if (verbose) {
-            std::cerr << "Loss after" << i
+            std::cerr << "Loss after " << i
                       << "th iteration: " << Loss(Y, omega, opts, result)
-                      << "\n";
+                      << std::endl;
         }
     }
     return result;

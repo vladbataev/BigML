@@ -87,14 +87,14 @@ void OptimizeByX(const MatrixXd& Y, const MatrixXb& omega, const MatrixXd& F,
         SparseMatrix<double> M = transform(T, W.row(i)) * lambdaX;
         M += (B + (eta / 2) * lambdaX * VectorXd::Ones(T)).asDiagonal();
 
-//        if (verify) {
-//            assert(F != MatrixXd::Zero(F.rows(), F.cols()));
-//            assert(W != MatrixXd::Zero(W.rows(), W.cols()));
-//            LLT<MatrixXd> llt(M);
-//            auto evals = MatrixXd(M).eigenvalues();
-//            cerr << "\nEigen values: \n" << evals << endl;
-//            assert(llt.info() != NumericalIssue);
-//        }
+        if (verify) {
+            assert(F != MatrixXd::Zero(F.rows(), F.cols()));
+            assert(W != MatrixXd::Zero(W.rows(), W.cols()));
+            LLT<MatrixXd> llt(M);
+            auto evals = MatrixXd(M).eigenvalues();
+            cerr << "\nEigen values: \n" << evals << endl;
+            assert(llt.info() != NumericalIssue);
+        }
 
         ConjugateGradient<SparseMatrix<double>, Lower, IncompleteCholesky<double>> cg;
         //cg.setMaxIterations(2);

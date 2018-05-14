@@ -27,7 +27,7 @@ std::tuple<class CachedWTransform, Factorization> Init(const Eigen::MatrixXd& Y,
 
 void Step(const Eigen::MatrixXd& Y, const Eigen::MatrixXb& omega,
           const Regularizer& opts, Factorization& result, CachedWTransform& Wt,
-          bool verify);
+          bool verbose = false, bool verify = false);
 
 double Loss(const Eigen::MatrixXd& Y, const Eigen::MatrixXb& omega,
             const Regularizer& opts, const Factorization& result);
