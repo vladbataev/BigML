@@ -110,11 +110,51 @@ std::tuple<MatrixXd, MatrixXb> ToEigenMatrices(
     return std::make_tuple(matrix, omega);
 }
 
-void SavePredictions(const MatrixXd& predictions,
-                     std::vector<double> timestamps, std::string out_csv) {
+void PrintHeader(const std::vector<std::string>& header, std::ostream& out) {
+    if (!header.empty()) {
+        for (size_t i = 0; i < header.size(); i++) {
+            if (i != 0) {
+                out << ",";
+            }
+            out << header[i];
+        }
+        out << "\n";
+    }
+}
+
+void SaveToCSV(const MatrixXd& matrix, std::string filename, const std::vector<std::string>& header) {
     std::ofstream myfile;
-    myfile.open (out_csv);
+    myfile.open(filename);
     myfile.precision(10);
+    if (myfile.fail()) {
+        throw std::runtime_error("failed to open " + filename);
+    }
+    PrintHeader(header, myfile);
+    for (size_t i = 0; i < matrix.cols(); i++) {
+        if (i != 0) {
+            myfile << "\n";
+        }
+        for (size_t j = 0; j < matrix.rows(); j++) {
+            if (j != 0) {
+                myfile << ",";
+            }
+            myfile << matrix(j, i);
+        }
+    }
+    myfile.close();
+}
+
+void SaveWithTimestamps(const MatrixXd& predictions,
+                     std::vector<double> timestamps,
+                     std::string out_csv,
+                     std::vector<std::string> header) {
+    std::ofstream myfile;
+    myfile.open(out_csv);
+    if (myfile.fail()) {
+        throw std::runtime_error("failed to open " + out_csv);
+    }
+    myfile.precision(10);
+    PrintHeader(header, myfile);
     for (size_t i = 0; i < predictions.cols(); ++i) {
         myfile << timestamps[i];
         for (size_t j = 0; j < predictions.rows(); ++j) {
@@ -154,6 +194,9 @@ int main(int argc, const char* argv[]) {
         ("predictions_out",
            po::value<std::string>()->default_value("predictions.csv"),
            "predictions output filename")
+        ("factor_out",
+           po::value<std::string>()->default_value(""),
+           "write result matrices to files with specified prefix")
         ("lambdaX", po::value<double>()->default_value(1), "lambdaX")
         ("lambdaW", po::value<double>()->default_value(1), "lambdaW")
         ("lambdaF", po::value<double>()->default_value(1), "lambdaF")
@@ -186,12 +229,13 @@ int main(int argc, const char* argv[]) {
     auto eta = vm["eta"].as<double>();
     auto eval =  vm["eval"].as<bool>();
     auto predictions_out = vm["predictions_out"].as<std::string>();
+    auto factor_out = vm["factor_out"].as<std::string>();
 
     std::set<size_t> dropped_columns;
     for (const auto& d : drop_columns) {
         dropped_columns.insert(d);
     }
-    
+
     auto expect = [](bool condition, std::string message) {
         if (!condition) {
             throw std::invalid_argument(message);
@@ -207,18 +251,28 @@ int main(int argc, const char* argv[]) {
 
     CSVRow row(sep);
     file >> row;
+    std::vector<std::string> output_header = {row[timestamp_column]}; //timestamp column is always first
+    for (size_t i = 0; i < row.size(); i++) {
+        if (dropped_columns.find(i) == dropped_columns.end() &&
+                i != timestamp_column) {
+            output_header.push_back(row[i]);
+        }
+    }
+
     size_t n = row.size() - drop_columns.size();
     size_t first_size = row.size();
 
     std::vector<std::vector<std::optional<double>>> train_data;
     std::vector<std::vector<std::optional<double>>> test_data;
 
+    std::vector<double> train_timestamps;
     std::vector<double> test_timestamps;
     while (file >> row) {
         expect(row.size() == first_size, "invalid csv file");
         if (std::stol(row[timestamp_column]) >= train_start &&
             std::stol(row[timestamp_column]) < train_end) {
             InsertRow(train_data, row, dropped_columns);
+            train_timestamps.push_back(std::stof(row[timestamp_column]));
         }
         if (std::stol(row[timestamp_column]) >= test_start &&
             std::stol(row[timestamp_column]) < test_end) {
@@ -259,13 +313,14 @@ int main(int argc, const char* argv[]) {
     auto factor = Factorize(train_matrix, train_omega,
                             {lags, lambdaW, lambdaX, lambdaF, eta},
                             lat_dim, steps, verbose);
-    if (verbose) {
-        std::cout << factor.F << "\n";
-        std::cout << factor.W << "\n";
-        std::cout << factor.X << "\n";
+
+    if (!factor_out.empty()) {
+        SaveWithTimestamps(factor.X, train_timestamps, factor_out + "_X.csv", {});
+        SaveToCSV(factor.W, factor_out + "_W.csv", {});
+        SaveToCSV(factor.F.transpose(), factor_out + "_F.csv", {output_header.begin() + 1, output_header.end()});
     }
-    size_t test_start_index = (test_start - train_start) / time_step;
-    size_t test_end_index = (test_end - train_start) / time_step;
+    size_t test_start_index = ceil((test_start - train_start) / time_step);
+    size_t test_end_index = ceil((test_end - train_start) / time_step);
     if (test_data.size() > 0) {
         test_end_index = test_start_index + test_data.size();
     }
@@ -279,7 +334,7 @@ int main(int argc, const char* argv[]) {
     }
 
     if (eval) {
-        SavePredictions(predictions, test_timestamps, predictions_out);
+        SaveWithTimestamps(predictions, test_timestamps, predictions_out, output_header);
         std::cout << "RMSE: " << RMSE(test_matrix, predictions, test_omega) << "\n";
         std::cout << "ND: " << ND(test_matrix, predictions, test_omega) << "\n";
     } else {
@@ -287,6 +342,6 @@ int main(int argc, const char* argv[]) {
         for (int i = 0; i < predictions.cols(); i++) {
             test_timestamps.push_back(test_start + time_step * i);
         }
-        SavePredictions(predictions, test_timestamps, predictions_out);
+        SaveWithTimestamps(predictions, test_timestamps, predictions_out, output_header);
     }
 }
