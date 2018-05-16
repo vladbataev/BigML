@@ -200,7 +200,8 @@ int main(int argc, const char* argv[]) {
         ("lambdaX", po::value<double>()->default_value(1), "lambdaX")
         ("lambdaW", po::value<double>()->default_value(1), "lambdaW")
         ("lambdaF", po::value<double>()->default_value(1), "lambdaF")
-        ("eta", po::value<double>()->default_value(1), "eta");
+        ("eta", po::value<double>()->default_value(1), "eta")
+        ("logs_file", po::value<std::string>()->default_value(""), "if non empty than store logs to this file");
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -230,6 +231,16 @@ int main(int argc, const char* argv[]) {
     auto eval =  vm["eval"].as<bool>();
     auto predictions_out = vm["predictions_out"].as<std::string>();
     auto factor_out = vm["factor_out"].as<std::string>();
+    auto logs_file_name = vm["logs_file"].as<std::string>();
+
+    std::ofstream logs_file;
+    bool logs_enabled;
+    if (logs_file_name.size() > 0) {
+        logs_file.open(logs_file_name);
+        logs_enabled = true;
+    } else {
+        logs_enabled = false;
+    }
 
     std::set<size_t> dropped_columns;
     for (const auto& d : drop_columns) {
@@ -312,7 +323,7 @@ int main(int argc, const char* argv[]) {
 
     auto factor = Factorize(train_matrix, train_omega,
                             {lags, lambdaW, lambdaX, lambdaF, eta},
-                            lat_dim, steps, verbose);
+                            lat_dim, steps, logs_file, logs_enabled, verbose);
 
     if (!factor_out.empty()) {
         SaveWithTimestamps(factor.X, train_timestamps, factor_out + "_X.csv", {});
@@ -337,6 +348,10 @@ int main(int argc, const char* argv[]) {
         SaveWithTimestamps(predictions, test_timestamps, predictions_out, output_header);
         std::cout << "RMSE: " << RMSE(test_matrix, predictions, test_omega) << "\n";
         std::cout << "ND: " << ND(test_matrix, predictions, test_omega) << "\n";
+        if (logs_file_name.size() > 0) {
+            logs_file << "RMSE: " << RMSE(test_matrix, predictions, test_omega) << "\n";
+            logs_file << "ND: " << ND(test_matrix, predictions, test_omega) << "\n";
+        }
     } else {
         test_timestamps.clear();
         for (int i = 0; i < predictions.cols(); i++) {

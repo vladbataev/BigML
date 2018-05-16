@@ -39,12 +39,16 @@ double Loss(const MatrixXd& Y, const MatrixXb& omega, const Regularizer& opts,
 }
 
 void Step(const MatrixXd& Y, const MatrixXb& omega, const Regularizer& opts,
-          Factorization& result, CachedWTransform& Wt, bool verbose,
-          bool verify) {
+          Factorization& result, CachedWTransform& Wt, std::ofstream &logs_file, bool logs_enabled,
+          bool verbose, bool verify) {
     auto print = [&](auto msg) {
         if (verbose) {
             std::cerr << "loss after " << msg << " : "
                       << Loss(Y, omega, opts, result) << std::endl;
+            if (logs_enabled) {
+                logs_file << "loss after " << msg << " : "
+                          << Loss(Y, omega, opts, result) << std::endl;
+            }
         }
     };
     result.W = OptimizeByW(result.X, opts.lags, opts.lambdaW, opts.lambdaX);
@@ -57,18 +61,28 @@ void Step(const MatrixXd& Y, const MatrixXb& omega, const Regularizer& opts,
 }
 
 Factorization Factorize(MatrixXd Y, MatrixXb omega, Regularizer opts,
-                        size_t lat_dim, size_t steps, bool verbose) {
+                        size_t lat_dim, size_t steps, std::ofstream& logs_file, bool logs_enabled,
+                        bool verbose ) {
     auto [Wt, result] = Init(Y, opts, lat_dim);
 
     if (verbose) {
         std::cerr << "Loss: " << Loss(Y, omega, opts, result) << "\n";
+        if (logs_enabled) {
+            logs_file << "Loss: " << Loss(Y, omega, opts, result) << "\n";
+        }
     }
     for (size_t i = 0; i < steps; i++) {
-        Step(Y, omega, opts, result, Wt, verbose, false);
+        Step(Y, omega, opts, result, Wt, logs_file, logs_enabled, verbose, false);
         if (verbose) {
             std::cerr << "Loss after " << i
                       << "th iteration: " << Loss(Y, omega, opts, result)
                       << std::endl;
+            if (logs_enabled) {
+                logs_file << "Loss after " << i
+                          << "th iteration: " << Loss(Y, omega, opts, result)
+                          << std::endl;
+            }
+
         }
     }
     return result;
