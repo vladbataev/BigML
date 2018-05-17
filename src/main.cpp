@@ -168,7 +168,7 @@ void SaveWithTimestamps(const MatrixXd& predictions,
 
 int main(int argc, const char* argv[]) {
     po::options_description desc("Allowed options");
-    std::vector<int> default_lags = {1, 5, 10};
+    std::vector<int> default_lags = {1, 5, 10, 20, 25, 100};
     std::vector<size_t> default_drop_columns = {};
 
     desc.add_options()
